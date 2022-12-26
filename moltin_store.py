@@ -209,15 +209,15 @@ def create_product_store(
     json_data = {
         'data': {
             'type': 'product',
-            'name': ' '.join(product_name),
+            'name': ''.join(product_name),
             'slug': product_sku,
             'sku': product_sku,
-            'description': ' '.join(product_description),
+            'description': ''.join(product_description),
             'manage_stock': manage_stock,
             'price': [
                 {
                     'amount': product_amount,
-                    'currency': 'USD',
+                    'currency': 'RUB',
                     'includes_tax': True,
                 },
             ],
@@ -225,9 +225,9 @@ def create_product_store(
             'commodity_type': 'physical',
         },
     }
-
     response = requests.post(url, headers=headers, json=json_data)
     response.raise_for_status()
+    return response.json().get('data')
 
 
 def del_product_store(moltin_token, product_id):
@@ -259,6 +259,7 @@ def create_file_relationship(moltin_token, image_id, product_id):
         json=json_data
     )
     response.raise_for_status()
+    return response.json().get('data')
 
 
 def create_inventory_store(moltin_token, quantity, product_id):
@@ -319,6 +320,19 @@ def create_customer(moltin_token, email, client_id):
     }
     response = requests.post(url, headers=headers, json=json_data)
     response.raise_for_status()
+
+
+def create_file(moltin_token, file_url):
+    url = 'https://api.moltin.com/v2/files'
+    headers = {
+        'Authorization': f'Bearer {moltin_token}'
+    }
+    files = {
+        'file_location': (None, file_url),
+    }
+    response = requests.post(url, headers=headers, files=files)
+    response.raise_for_status()
+    return response.json().get('data')
 
 
 if __name__ == '__main__':
