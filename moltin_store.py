@@ -24,9 +24,18 @@ def get_args():
         action='store_true'
     )
     parser.add_argument(
+        '--create_file',
+        help='Загрузить файл на сайт через url, нужен file_url',
+        action='store_true'
+    )
+    parser.add_argument(
         '--create_file_relationship',
         help='Привязать фотографию к товару',
         action='store_true'
+    )
+    parser.add_argument(
+        '--file_url',
+        help='Ссылка на файл'
     )
     parser.add_argument(
         '--image_id',
@@ -335,6 +344,26 @@ def create_file(moltin_token, file_url):
     return response.json().get('data')
 
 
+def create_flow(moltin_token, flow_name, flow_description, flow_status=True):
+    url = 'https://api.moltin.com/v2/flows'
+    headers = {
+        'Authorization': f'Bearer {moltin_token}'
+    }
+    json_data = {
+        'data': {
+            'type': 'flow',
+            'name': flow_name,
+            'slug': flow_name,
+            'description': flow_description,
+            'enabled': flow_status
+        },
+    }
+    response = requests.post(url, headers=headers, json=json_data)
+    response.raise_for_status()
+    print(response.json())
+    return response.json()
+
+
 if __name__ == '__main__':
     env = Env()
     env.read_env()
@@ -374,3 +403,6 @@ if __name__ == '__main__':
         product_id = args.product_id
         image_id = args.image_id
         create_file_relationship(moltin_token, image_id, product_id)
+    elif args.create_file:
+        file_url = args.file_url
+        create_file(moltin_token, file_url)
