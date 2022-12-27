@@ -9,9 +9,6 @@ from environs import Env
 
 
 if __name__ == '__main__':
-    with open('addresses.json', 'r', encoding='utf-8') as adresses_file:
-        adresses = adresses_file.read()
-    adresses_json = json.loads(adresses)
     with open('menu.json', 'r', encoding='utf-8') as menu_file:
         menu = menu_file.read()
     menu_json = json.loads(menu)

@@ -344,7 +344,16 @@ def create_file(moltin_token, file_url):
     return response.json().get('data')
 
 
-def create_flow(moltin_token, flow_name, flow_description, flow_status=True):
+def get_all_flow(moltin_token):
+    url = 'https://api.moltin.com/v2/flows/d8c36871-11d3-4e87-b1e8-224df3346383'
+    headers = {
+        'Authorization': f'Bearer {moltin_token}'
+    }
+    response = requests.get(url, headers=headers)
+    response.raise_for_status()
+    print(response.json())
+
+def create_flow(moltin_token, flow_status=True):
     url = 'https://api.moltin.com/v2/flows'
     headers = {
         'Authorization': f'Bearer {moltin_token}'
@@ -352,9 +361,9 @@ def create_flow(moltin_token, flow_name, flow_description, flow_status=True):
     json_data = {
         'data': {
             'type': 'flow',
-            'name': flow_name,
-            'slug': flow_name,
-            'description': flow_description,
+            'name': 'Pizzeria',
+            'slug': 'Pizzeria',
+            'description': 'Pizzeria',
             'enabled': flow_status
         },
     }
@@ -363,6 +372,67 @@ def create_flow(moltin_token, flow_name, flow_description, flow_status=True):
     print(response.json())
     return response.json()
 
+
+def create_field(moltin_token, flow_id, field_type, field_name, field_slug, field_description):
+    url = 'https://api.moltin.com/v2/fields'
+    headers = {
+        'Authorization': f'Bearer {moltin_token}'
+    }
+    json_data = {
+        'data': {
+            'type': 'field',
+            'name': field_name,
+            'slug': field_slug,
+            'field_type': field_type,
+            'validation_rules': [
+                {
+                    'type': 'between',
+                    'options': {
+                        'from': 1,
+                        'to': 5,
+                    },
+                },
+            ],
+            'description': field_description,
+            'required': False,
+            'default': 0,
+            'enabled': True,
+            'order': 1,
+            'omit_null': False,
+            'relationships': {
+                'flow': {
+                    'data': {
+                        'type': 'flow',
+                        'id': flow_id,
+                    },
+                },
+            },
+        },
+    }
+
+
+def create_entry(
+        moltin_token,
+        pizzeria_address,
+        pizzeria_alias,
+        pizzeria_longitude,
+        pizzeria_latitude
+):
+    url = f'https://api.moltin.com/v2/flows/Pizzeria/entries'
+    headers = {
+        'Authorization': f'Bearer {moltin_token}'
+    }
+    json_data = {
+        'data': {
+            'type': 'entry',
+            'Address': pizzeria_address,
+            'Alias': pizzeria_alias,
+            'Longitude': pizzeria_longitude,
+            'Latitude': pizzeria_latitude
+        }
+    }
+    response = requests.post(url, headers=headers, json=json_data)
+    print(response.json())
 
 if __name__ == '__main__':
     env = Env()
@@ -374,6 +444,8 @@ if __name__ == '__main__':
         moltin_client_secret
     )
     args = get_args()
+    get_all_flow(moltin_token)
+    create_entry(moltin_token)
     if args.create_product:
         product_name = args.product_name
         sku = args.sku
