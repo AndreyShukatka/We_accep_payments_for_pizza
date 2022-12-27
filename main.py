@@ -5,7 +5,6 @@ from environs import Env
 def main():
     env = Env()
     env.read_env()
-
     with open('addresses.json', 'r', encoding='utf-8') as adresses_file:
         adresses = adresses_file.read()
     adresses_json = json.loads(adresses)

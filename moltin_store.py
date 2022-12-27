@@ -416,9 +416,10 @@ def create_entry(
         pizzeria_address,
         pizzeria_alias,
         pizzeria_longitude,
-        pizzeria_latitude
+        pizzeria_latitude,
+        flow_name
 ):
-    url = f'https://api.moltin.com/v2/flows/Pizzeria/entries'
+    url = f'https://api.moltin.com/v2/flows/{flow_name}/entries'
     headers = {
         'Authorization': f'Bearer {moltin_token}'
     }
