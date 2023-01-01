@@ -162,7 +162,7 @@ def get_cart(moltin_token, client_id):
     ).get(
         'with_tax'
     ).get(
-        'formatted'
+        'amount'
     )
 
 
@@ -179,7 +179,8 @@ def get_cart_items(moltin_token, client_id):
 def add_product_cart(moltin_token, client_id, product_id, product_quantity):
     url = f'https://api.moltin.com/v2/carts/{client_id}/items'
     headers = {
-        'Authorization': f'Bearer {moltin_token}'
+        'Authorization': f'Bearer {moltin_token}',
+        'Content-Type': 'application/json'
     }
     json_data = {
         "data": {
@@ -189,6 +190,7 @@ def add_product_cart(moltin_token, client_id, product_id, product_quantity):
         }
     }
     response = requests.post(url, headers=headers, json=json_data)
+    print(response.json())
     response.raise_for_status()
 
 
@@ -284,7 +286,6 @@ def create_inventory_store(moltin_token, quantity, product_id):
             'quantity': {quantity},
         },
     }
-
     response = requests.post(
         url,
         headers=headers,
@@ -373,44 +374,6 @@ def create_flow(moltin_token, flow_status=True):
     return response.json()
 
 
-def create_field(moltin_token, flow_id, field_type, field_name, field_slug, field_description):
-    url = 'https://api.moltin.com/v2/fields'
-    headers = {
-        'Authorization': f'Bearer {moltin_token}'
-    }
-    json_data = {
-        'data': {
-            'type': 'field',
-            'name': field_name,
-            'slug': field_slug,
-            'field_type': field_type,
-            'validation_rules': [
-                {
-                    'type': 'between',
-                    'options': {
-                        'from': 1,
-                        'to': 5,
-                    },
-                },
-            ],
-            'description': field_description,
-            'required': False,
-            'default': 0,
-            'enabled': True,
-            'order': 1,
-            'omit_null': False,
-            'relationships': {
-                'flow': {
-                    'data': {
-                        'type': 'flow',
-                        'id': flow_id,
-                    },
-                },
-            },
-        },
-    }
-
-
 def create_entry(
         moltin_token,
         pizzeria_address,
@@ -445,8 +408,6 @@ if __name__ == '__main__':
         moltin_client_secret
     )
     args = get_args()
-    get_all_flow(moltin_token)
-    create_entry(moltin_token)
     if args.create_product:
         product_name = args.product_name
         sku = args.sku

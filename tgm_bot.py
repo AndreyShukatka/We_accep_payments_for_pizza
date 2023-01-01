@@ -52,21 +52,12 @@ def handle_menu(bot, update):
         handle_cart(bot, update)
         return 'HANDLE_CART'
     product_details = get_product(moltin_token, callback)
-    product_stock = get_product_stock(moltin_token, callback).get('available')
     file_id = product_details['relationships']['files']['data'][0]['id']
     picture_href = get_image_href(moltin_token, file_id)
-    product_description = f"""
-        Name: {product_details.get("name")}\n
-        Price: {
-    product_details.get("meta").get("display_price").get("with_tax").get("formatted")
-    } per kg
-        Stock: {product_stock} kg on stock\n
-        Description: {product_details.get("description")}"""
+    product_description = f'{product_details.get("name")} \nСтоимость: {product_details.get("price")[0].get("amount")} рублей \n\n{product_details.get("description")} '
     keyboard = [
         [
-            InlineKeyboardButton('1 кг', callback_data=f'{callback},1'),
-            InlineKeyboardButton('5 кг', callback_data=f'{callback},5'),
-            InlineKeyboardButton('10 кг', callback_data=f'{callback},10')
+            InlineKeyboardButton('Положить в корзину', callback_data=f'{callback},1'),
         ],
         [InlineKeyboardButton('Корзина', callback_data='cart')],
         [InlineKeyboardButton('В меню', callback_data='start')]
@@ -111,11 +102,10 @@ def handle_description(bot, update):
         )
         reply_markup = InlineKeyboardMarkup(keyboard)
         cart_description = [
-            f'''{number + 1}) Name: {product['name']}
-            Description: {product['description']}
-            Price: ${product['unit_price']['amount']} pet kg
-            {product['quantity']} kg in cart for ${product['value']['amount']}\n\n'''
-            for number, product in enumerate(products_cart)]
+            f'''{product['name']}
+            {product['description']}
+            {product['quantity']} пицц в корзине на сумму {product['value']['amount']} рублей\n\n'''
+            for product in products_cart]
         cart_description.append(f'Total: {total_price}')
         update.effective_message.reply_text(
             text="".join(cart_description),
@@ -125,6 +115,7 @@ def handle_description(bot, update):
         return "HANDLE_CART"
     else:
         product_id, product_quantity = callback.split(',')
+        print(product_quantity, product_id)
         add_product_cart(moltin_token, client_id, product_id, product_quantity)
 
         return "HANDLE_DESCRIPTION"
@@ -155,12 +146,10 @@ def handle_cart(bot, update):
         )
         reply_markup = InlineKeyboardMarkup(keyboard)
         cart_description = [
-            f'''{number + 1}) Name: {product['name']}
-            Description: {product['description']}
-            Price: ${product['unit_price']['amount']} pet kg
-            {product['quantity']} kg in cart for ${product['value']['amount']}\n\n'''
-            for number, product in enumerate(products_cart)
-        ]
+            f'''{product['name']}
+            {product['description']}
+            {product['quantity']} пицц в корзине на сумму {product['value']['amount']} рублей\n\n'''
+            for product in products_cart]
         cart_description.append(f'Total: {total_price}')
         update.effective_message.reply_text(
             text=''.join(cart_description),
@@ -229,10 +218,7 @@ def handle_contacts(bot, update):
 
 def handle_users_reply(bot, update):
     db = get_database_connection()
-    if bot:
-        user_reply = bot.message.text
-        chat_id = bot.message.chat_id
-    elif update.message:
+    if update.message:
         user_reply = update.message.text
         chat_id = update.message.chat_id
     elif update.callback_query:
