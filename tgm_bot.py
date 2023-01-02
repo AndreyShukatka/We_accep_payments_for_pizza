@@ -13,6 +13,7 @@ from moltin_store import (
     create_customer,
     checking_period_token
 )
+import requests
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     Filters,
@@ -162,7 +163,7 @@ def handle_cart(bot, update):
         return 'HANDLE_MENU'
     elif callback == 'pay':
         update.effective_message.reply_text(
-            text="Введите ваш email"
+            text="Хорошо, пришлите нам ваш адрес текстом или геолокацию"
         )
         return 'WAITING_EMAIL'
     else:
@@ -200,20 +201,12 @@ def handle_contacts(bot, update):
     moltin_token = checking_period_token(moltin_client_id, moltin_client_secret, db)
     email = update.message.text
     client_id = update.message.chat_id
-    # https://www.mygreatlearning.com/blog/regular-expression-in-python/
-    regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
-    if re.fullmatch(regex, email):
-        create_customer(moltin_token, email, client_id)
-        update.effective_message.reply_text(
-            text="Ваш заказ создан."
-        )
-        start(bot, update)
-        return 'START'
-    else:
-        update.effective_message.reply_text(
-            text="Вы ввели неверный email"
-        )
-        return 'WAITING_EMAIL'
+    update.effective_message.reply_text(
+        text="Ваш заказ создан."
+    )
+    start(bot, update)
+    return 'START'
+
 
 
 def handle_users_reply(bot, update):
@@ -236,7 +229,8 @@ def handle_users_reply(bot, update):
         'HANDLE_DESCRIPTION': handle_description,
         'HANDLE_MENU': handle_menu,
         'HANDLE_CART': handle_cart,
-        'WAITING_EMAIL': handle_contacts
+        'WAITING_EMAIL': get_location,
+        'HANDLE_WAITING': 'handle_waiting'
     }
     state_handler = states_functions[user_state]
     try:
@@ -260,18 +254,55 @@ def get_database_connection():
     return _database
 
 
+def get_location(bot, update):
+    if update.edited_message:
+        message = update.edited_message
+    else:
+        message = update.message
+    if message.location:
+        coordinates = (message.location.latitude, message.location.longitude)
+    else:
+        address = message.text
+        coordinates = fetch_coordinates(yandex_api_key, address)
+    update.effective_message.reply_text(
+        text=coordinates
+    )
+    return
+
+
+def fetch_coordinates(yandex_api_key, address):
+    base_url = "https://geocode-maps.yandex.ru/1.x"
+    response = requests.get(base_url, params={
+        "geocode": address,
+        "apikey": yandex_api_key,
+        "format": "json",
+    })
+    response.raise_for_status()
+    found_places = response.json()['response']['GeoObjectCollection']['featureMember']
+
+    if not found_places:
+        return None
+
+    most_relevant = found_places[0]
+    lon, lat = most_relevant['GeoObject']['Point']['pos'].split(" ")
+    return lon, lat
+
+
 if __name__ == '__main__':
     env = Env()
     env.read_env()
     db = get_database_connection()
+    yandex_api_key = env('YANDEX_API_KEY')
     moltin_client_secret = env('MOLTIN_CLIENT_SECRET')
     moltin_client_id = env('MOLTIN_CLIENT_ID')
     tgm_token = env('TGM_TOKEN')
     updater = Updater(tgm_token)
+    location_handler = MessageHandler(Filters.location, get_location)
     dispatcher = updater.dispatcher
     dispatcher.chat_data['access_token'] = db.get('access_token')
     dispatcher.add_handler(CallbackQueryHandler(handle_users_reply))
     dispatcher.add_handler(MessageHandler(Filters.text, handle_users_reply))
     dispatcher.add_handler(CommandHandler('start', handle_users_reply))
+    dispatcher.add_handler(location_handler)
     updater.start_polling()
     updater.idle()
