@@ -1,7 +1,7 @@
-import redis
-import re
+from geopy import distance
+from .models import TelegramUser
 from environs import Env
-from moltin_store import (
+from .moltin_store import (
     get_all_products,
     get_product,
     get_product_stock,
@@ -10,7 +10,7 @@ from moltin_store import (
     get_cart,
     get_cart_items,
     del_product_cart,
-    create_customer,
+    get_all_entries,
     checking_period_token
 )
 import requests
@@ -23,12 +23,16 @@ from telegram.ext import (
     MessageHandler
 )
 
-_database = None
+env = Env()
+env.read_env()
+moltin_client_secret = env('MOLTIN_CLIENT_SECRET')
+moltin_client_id = env('MOLTIN_CLIENT_ID')
+yandex_api_key = env('YANDEX_API_KEY')
 
 
 def start(bot, update):
     keyboard = []
-    moltin_token = checking_period_token(moltin_client_id, moltin_client_secret, db)
+    moltin_token = checking_period_token(moltin_client_id, moltin_client_secret)
     all_products = get_all_products(moltin_token)
     for product in all_products:
         keyboard.append([InlineKeyboardButton(
@@ -46,7 +50,7 @@ def start(bot, update):
 
 
 def handle_menu(bot, update):
-    moltin_token = checking_period_token(moltin_client_id, moltin_client_secret, db)
+    moltin_token = checking_period_token(moltin_client_id, moltin_client_secret)
     query = update.callback_query
     callback = query.data
     if callback == 'cart':
@@ -76,7 +80,7 @@ def handle_menu(bot, update):
 
 
 def handle_description(bot, update):
-    moltin_token = checking_period_token(moltin_client_id, moltin_client_secret, db)
+    moltin_token = checking_period_token(moltin_client_id, moltin_client_secret)
     query = update.callback_query
     callback = query.data
     client_id = query['message']['chat']['id']
@@ -116,14 +120,13 @@ def handle_description(bot, update):
         return "HANDLE_CART"
     else:
         product_id, product_quantity = callback.split(',')
-        print(product_quantity, product_id)
         add_product_cart(moltin_token, client_id, product_id, product_quantity)
 
         return "HANDLE_DESCRIPTION"
 
 
 def handle_cart(bot, update):
-    moltin_token = checking_period_token(moltin_client_id, moltin_client_secret, db)
+    moltin_token = checking_period_token(moltin_client_id, moltin_client_secret)
     query = update.callback_query
     callback = query.data
     client_id = query['message']['chat']['id']
@@ -198,7 +201,7 @@ def handle_cart(bot, update):
 
 
 def handle_contacts(bot, update):
-    moltin_token = checking_period_token(moltin_client_id, moltin_client_secret, db)
+    moltin_token = checking_period_token(moltin_client_id, moltin_client_secret)
     email = update.message.text
     client_id = update.message.chat_id
     update.effective_message.reply_text(
@@ -210,7 +213,6 @@ def handle_contacts(bot, update):
 
 
 def handle_users_reply(bot, update):
-    db = get_database_connection()
     if update.message:
         user_reply = update.message.text
         chat_id = update.message.chat_id
@@ -222,7 +224,7 @@ def handle_users_reply(bot, update):
     if user_reply == '/start':
         user_state = 'START'
     else:
-        user_state = db.get(chat_id).decode("utf-8")
+        user_state = TelegramUser.objects.get(chat_id=chat_id)
 
     states_functions = {
         "START": start,
@@ -235,26 +237,22 @@ def handle_users_reply(bot, update):
     state_handler = states_functions[user_state]
     try:
         next_state = state_handler(bot, update)
-        db.set(chat_id, next_state)
+        if TelegramUser.objects.filter(chat_id=chat_id):
+            user = TelegramUser.objects.get(chat_id=chat_id)
+            user.next_state = next_state
+        else:
+            TelegramUser.objects.create(
+                chat_id=chat_id,
+                next_state=next_state
+            )
     except Exception as err:
         print(err)
 
 
-def get_database_connection():
-    global _database
-    if _database is None:
-        database_password = env('REDIS_PASSWORD')
-        database_host = env('REDIS_HOST')
-        database_port = env('REDIS_PORT')
-        _database = redis.Redis(
-            host=database_host,
-            port=database_port,
-            password=database_password
-        )
-    return _database
-
 
 def get_location(bot, update):
+    moltin_token = checking_period_token(moltin_client_id, moltin_client_secret)
+    flow_name = 'Pizzeria'
     if update.edited_message:
         message = update.edited_message
     else:
@@ -267,6 +265,8 @@ def get_location(bot, update):
     update.effective_message.reply_text(
         text=coordinates
     )
+    all_moltin_pizzerias = get_all_entries(moltin_token, flow_name)
+    all_pizzerias = dict()
     return
 
 
@@ -285,24 +285,13 @@ def fetch_coordinates(yandex_api_key, address):
 
     most_relevant = found_places[0]
     lon, lat = most_relevant['GeoObject']['Point']['pos'].split(" ")
-    return lon, lat
-
+    return lat, lon
 
 if __name__ == '__main__':
     env = Env()
     env.read_env()
-    db = get_database_connection()
-    yandex_api_key = env('YANDEX_API_KEY')
     moltin_client_secret = env('MOLTIN_CLIENT_SECRET')
     moltin_client_id = env('MOLTIN_CLIENT_ID')
-    tgm_token = env('TGM_TOKEN')
-    updater = Updater(tgm_token)
-    location_handler = MessageHandler(Filters.location, get_location)
-    dispatcher = updater.dispatcher
-    dispatcher.chat_data['access_token'] = db.get('access_token')
-    dispatcher.add_handler(CallbackQueryHandler(handle_users_reply))
-    dispatcher.add_handler(MessageHandler(Filters.text, handle_users_reply))
-    dispatcher.add_handler(CommandHandler('start', handle_users_reply))
-    dispatcher.add_handler(location_handler)
-    updater.start_polling()
-    updater.idle()
+    yandex_api_key = env('YANDEX_API_KEY')
+
+

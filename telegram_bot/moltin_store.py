@@ -2,6 +2,7 @@ import requests
 from environs import Env
 import argparse
 from datetime import datetime, timedelta
+from .models import MoltinToken
 
 
 def get_args():
@@ -87,7 +88,7 @@ def get_args():
     return args
 
 
-def get_moltin_token(moltin_client_id, moltin_client_secret, db=None):
+def get_moltin_token(moltin_client_id, moltin_client_secret):
     url = 'https://api.moltin.com/oauth/access_token'
     data = {
         'client_id': moltin_client_id,
@@ -96,32 +97,35 @@ def get_moltin_token(moltin_client_id, moltin_client_secret, db=None):
     }
     response = requests.post(url, data=data)
     response.raise_for_status()
-    if db:
-        now_time = datetime.now()
-        token_expiration = int(response.json().get('expires_in'))
-        seconds = int(60)
-        minutes_token_expiration = token_expiration / seconds
-        token_end_time = now_time + timedelta(minutes=minutes_token_expiration)
-        db.set('access_token', response.json().get('access_token'))
-        db.set('token_creation_time', str(now_time))
-        db.set('token_end_time', str(token_end_time))
+    date_formatter = '%Y-%m-%d %H:%M:%S'
+    now_time = datetime.now()
+    token_expiration = int(response.json().get('expires_in'))
+    seconds = int(60)
+    minutes_token_expiration = token_expiration / seconds
+    token_end_time = now_time + timedelta(minutes=minutes_token_expiration)
+    MoltinToken(
+        access_token=response.json().get('access_token'),
+        token_creation_time=now_time.strftime(date_formatter),
+        token_end_time=token_end_time.strftime(date_formatter)
+    ).save()
     return response.json().get('access_token')
 
 
-def checking_period_token(moltin_client_id, moltin_client_secret, db):
-    date_formatter = '%Y-%m-%d %H:%M:%S.%f'
-    if db.get('token_creation_time'):
+def checking_period_token(moltin_client_id, moltin_client_secret):
+    date_formatter = '%Y-%m-%d %H:%M:%S'
+    moltin_token=MoltinToken.objects.first()
+    if MoltinToken.objects.all():
         now_time = datetime.now()
-        token_creation_time = datetime.strptime(db.get('token_creation_time').decode(), date_formatter)
-        token_end_time = datetime.strptime(db.get('token_end_time').decode(), date_formatter)
+        token_creation_time = datetime.strptime(str(moltin_token.token_creation_time), date_formatter)
+        token_end_time = datetime.strptime(str(moltin_token.token_end_time), date_formatter)
         if token_creation_time <= now_time <= token_end_time:
-            moltin_token = db.get('access_token').decode('utf-8')
+            moltin_token = moltin_token.access_token
             return moltin_token
         else:
-            moltin_token = get_moltin_token(moltin_client_id, moltin_client_secret, db)
+            moltin_token = get_moltin_token(moltin_client_id, moltin_client_secret)
             return moltin_token
     else:
-        moltin_token = get_moltin_token(moltin_client_id, moltin_client_secret, db)
+        moltin_token = get_moltin_token(moltin_client_id, moltin_client_secret)
         return moltin_token
 
 
@@ -396,7 +400,18 @@ def create_entry(
         }
     }
     response = requests.post(url, headers=headers, json=json_data)
-    print(response.json())
+    response.raise_for_status()
+    return response.json()
+
+
+def get_all_entries(moltin_token, flow_name):
+    url = f'https://api.moltin.com/v2/flows/{flow_name}/entries'
+    headers = {
+        'Authorization': f'Bearer {moltin_token}'
+    }
+    response = requests.get(url, headers=headers)
+    response.raise_for_status()
+    return response.json().get('data')
 
 if __name__ == '__main__':
     env = Env()
