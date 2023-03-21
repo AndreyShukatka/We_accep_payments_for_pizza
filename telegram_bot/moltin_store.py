@@ -5,89 +5,6 @@ from datetime import datetime, timedelta
 from .models import MoltinToken
 
 
-def get_args():
-    parser = argparse.ArgumentParser(
-        description='Программа для работы с API магазина moltin'
-    )
-    parser.add_argument(
-        '--create_product',
-        help='Добавить продукт в магазин, укажите: product_name, sku, description, amount, по умолчанию False',
-        action='store_true'
-    )
-    parser.add_argument(
-        '--create_inventory_store',
-        help='Заполнить количество на складе, нужен product_id и quantity',
-        action='store_true'
-    )
-    parser.add_argument(
-        '--del_product',
-        help='Удалить продукт из магазина, нужен product_id',
-        action='store_true'
-    )
-    parser.add_argument(
-        '--create_file',
-        help='Загрузить файл на сайт через url, нужен file_url',
-        action='store_true'
-    )
-    parser.add_argument(
-        '--create_file_relationship',
-        help='Привязать фотографию к товару',
-        action='store_true'
-    )
-    parser.add_argument(
-        '--file_url',
-        help='Ссылка на файл'
-    )
-    parser.add_argument(
-        '--image_id',
-        help='Ввести id фотографии товара'
-    )
-    parser.add_argument(
-        '--quantity',
-        help='Количество товара',
-        type=int
-    )
-    parser.add_argument(
-        '--product_name',
-        help='Наименование продукта',
-        nargs='+'
-    )
-    parser.add_argument(
-        '--get_all_products',
-        help='Посмотреть все добавленные в магазин товары',
-        action="store_true"
-    )
-    parser.add_argument(
-        '--sku',
-        help='SKU продукта'
-    )
-    parser.add_argument(
-        '--description',
-        help='Описание продукта',
-        nargs='+'
-    )
-    parser.add_argument(
-        '--manage_stock',
-        help='Менеджмент продукта, по умолчанию True',
-        default=True
-    )
-    parser.add_argument(
-        '--amount',
-        help='Цена продукта'
-    )
-    parser.add_argument(
-        '--product_status',
-        help='Статус продукта, по умолчанию live',
-        default='live'
-    )
-    parser.add_argument(
-        '--product_id',
-        help='id продукта'
-    )
-    args = parser.parse_args()
-    return args
-
-
 def get_moltin_token(moltin_client_id, moltin_client_secret):
     url = 'https://api.moltin.com/oauth/access_token'
     data = {
@@ -113,7 +30,7 @@ def get_moltin_token(moltin_client_id, moltin_client_secret):
 
 def checking_period_token(moltin_client_id, moltin_client_secret):
     date_formatter = '%Y-%m-%d %H:%M:%S'
-    moltin_token=MoltinToken.objects.first()
+    moltin_token = MoltinToken.objects.first()
     if MoltinToken.objects.all():
         now_time = datetime.now()
         token_creation_time = datetime.strptime(str(moltin_token.token_creation_time), date_formatter)
@@ -358,6 +275,7 @@ def get_all_flow(moltin_token):
     response.raise_for_status()
     print(response.json())
 
+
 def create_flow(moltin_token, flow_status=True):
     url = 'https://api.moltin.com/v2/flows'
     headers = {
@@ -366,9 +284,9 @@ def create_flow(moltin_token, flow_status=True):
     json_data = {
         'data': {
             'type': 'flow',
-            'name': 'Pizzeria',
-            'slug': 'Pizzeria',
-            'description': 'Pizzeria',
+            'name': 'Customer Address',
+            'slug': 'customer_Address',
+            'description': 'Customer Address',
             'enabled': flow_status
         },
     }
@@ -380,10 +298,6 @@ def create_flow(moltin_token, flow_status=True):
 
 def create_entry(
         moltin_token,
-        pizzeria_address,
-        pizzeria_alias,
-        pizzeria_longitude,
-        pizzeria_latitude,
         flow_name
 ):
     url = f'https://api.moltin.com/v2/flows/{flow_name}/entries'
@@ -393,10 +307,10 @@ def create_entry(
     json_data = {
         'data': {
             'type': 'entry',
-            'Address': pizzeria_address,
-            'Alias': pizzeria_alias,
-            'Longitude': pizzeria_longitude,
-            'Latitude': pizzeria_latitude
+            'user_id': '',
+            'Address': '',
+            'Longitude': '',
+            'Latitude': ''
         }
     }
     response = requests.post(url, headers=headers, json=json_data)
@@ -412,46 +326,3 @@ def get_all_entries(moltin_token, flow_name):
     response = requests.get(url, headers=headers)
     response.raise_for_status()
     return response.json().get('data')
-
-if __name__ == '__main__':
-    env = Env()
-    env.read_env()
-    moltin_client_id = env('MOLTIN_CLIENT_ID')
-    moltin_client_secret = env('MOLTIN_CLIENT_SECRET')
-    moltin_token = get_moltin_token(
-        moltin_client_id,
-        moltin_client_secret
-    )
-    args = get_args()
-    if args.create_product:
-        product_name = args.product_name
-        sku = args.sku
-        description = args.description
-        manage_stock = args.manage_stock
-        amount = args.amount
-        product_status = args.product_status
-        create_product_store(
-            moltin_token,
-            product_name,
-            sku,
-            description,
-            manage_stock,
-            amount,
-            product_status
-        )
-    elif args.del_product:
-        product_id = args.product_id
-        del_product_store(moltin_token, product_id)
-    elif args.get_all_products:
-        print(get_all_products(moltin_token))
-    elif args.create_inventory_store:
-        quantity = args.quantity
-        product_id = args.product_id
-        create_inventory_store(moltin_token, quantity, product_id)
-    elif args.create_file_relationship:
-        product_id = args.product_id
-        image_id = args.image_id
-        create_file_relationship(moltin_token, image_id, product_id)
-    elif args.create_file:
-        file_url = args.file_url
-        create_file(moltin_token, file_url)

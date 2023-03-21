@@ -251,50 +251,82 @@ def handle_users_reply(bot, update):
         print(err)
 
 
+def fetch_coordinates(yandex_api_key, address):
+    base_url = "https://geocode-maps.yandex.ru/1.x"
+    response = requests.get(base_url, params={
+        "geocode": address,
+        "apikey": yandex_api_key,
+        "format": "json",
+    })
+    response.raise_for_status()
+    found_places = response.json()['response']['GeoObjectCollection']['featureMember']
+
+    if not found_places:
+        return None
+
+    most_relevant = found_places[0]
+    lon, lat = most_relevant['GeoObject']['Point']['pos'].split(" ")
+    return lat, lon
+
+
 def get_location(bot, update):
     moltin_token = checking_period_token(moltin_client_id, moltin_client_secret)
     flow_name = 'Pizzeria'
+    keyboard = [
+        [InlineKeyboardButton("Самовывоз", callback_data='Самовывоз')],
+        [InlineKeyboardButton("Доставка", callback_data='Самовывоз')]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
     if update.edited_message:
         message = update.edited_message
     else:
         message = update.message
     if message.location:
-        coordinates = (message.location.latitude, message.location.longitude)
+        user_coordinates = (message.location.latitude, message.location.longitude)
     else:
         address = message.text
-        coordinates = fetch_coordinates(yandex_api_key, address)
-    update.effective_message.reply_text(
-        text=coordinates
-    )
+        user_coordinates = fetch_coordinates(yandex_api_key, address)
     all_moltin_pizzerias = get_all_entries(moltin_token, flow_name)
+    distance_all_pizzerias = []
     for pizzeria in all_moltin_pizzerias:
         pizzeria_lon = pizzeria['Longitude']
         pizzeria_lat = pizzeria['Latitude']
-        print(pizzeria_lon,pizzeria_lat)
-        print(coordinates)
-        all_pizzerias = dict()
-        return
-
-    def fetch_coordinates(yandex_api_key, address):
-        base_url = "https://geocode-maps.yandex.ru/1.x"
-        response = requests.get(base_url, params={
-            "geocode": address,
-            "apikey": yandex_api_key,
-            "format": "json",
+        pizzeria_coor = [pizzeria_lat, pizzeria_lon]
+        user_distance = distance.distance(user_coordinates, pizzeria_coor)
+        distance_all_pizzerias.append({
+            'address': pizzeria.get('Address'),
+            'distance': int(user_distance.kilometers)
         })
-        response.raise_for_status()
-        found_places = response.json()['response']['GeoObjectCollection']['featureMember']
+    print(distance_all_pizzerias)
 
-        if not found_places:
-            return None
+    def get_address_distance(address):
+        return address['distance']
 
-        most_relevant = found_places[0]
-        lon, lat = most_relevant['GeoObject']['Point']['pos'].split(" ")
-        return lat, lon
-
-    if __name__ == '__main__':
-        env = Env()
-        env.read_env()
-        moltin_client_secret = env('MOLTIN_CLIENT_SECRET')
-        moltin_client_id = env('MOLTIN_CLIENT_ID')
-        yandex_api_key = env('YANDEX_API_KEY')
+    min_distance = min(distance_all_pizzerias, key=get_address_distance)
+    if min_distance['distance'] < 0.5:
+        update.effective_message.reply_text(
+            text=f'Может, заберете пиццу из нашей пиццерии неподалёку? Она всего в {min_distance["distance"]} метрах от вас!'
+                 f'Вот её адрес: {min_distance["address"]}.'
+                 f'А можем и бесплатно доставить.',
+            reply_markup=reply_markup
+        )
+    elif 0.5 < min_distance['distance'] < 5:
+        update.effective_message.reply_text(
+            text=f'Похоже, придется ехать до вас на самокате. Доставка будет стоить 100 рублей. Доставляем или самовывоз?',
+            reply_markup=reply_markup
+        )
+    elif 5 < min_distance['distance'] < 20:
+        update.effective_message.reply_text(
+            text=f'Похоже, придется ехать до вас на автомобиле. Доставка будет стоить 300 рублей. Доставляем или самовывоз?',
+            reply_markup=reply_markup
+        )
+    else:
+        keyboard = [
+            [InlineKeyboardButton("Самовывоз", callback_data='Самовывоз')]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        update.effective_message.reply_text(
+            text=f'Простите, но так далеко мы пиццу не доставим. Ближайшая пиццерия аж в {min_distance["distance"]} километрах от вас!',
+            reply_markup=reply_markup
+        )
+    return

@@ -12,7 +12,7 @@ from telegram.ext import (
 )
 
 class Command(BaseCommand):
-    help = 'Start parse recipes'
+    help = 'Start telegramm bot'
 
     def handle(self, *args, **options):
         env = Env()
