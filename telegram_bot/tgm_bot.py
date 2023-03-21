@@ -56,6 +56,9 @@ def handle_menu(bot, update):
     if callback == 'cart':
         handle_cart(bot, update)
         return 'HANDLE_CART'
+    if callback == 'start':
+        start(bot, update)
+        return 'HANDLE_MENU'
     product_details = get_product(moltin_token, callback)
     file_id = product_details['relationships']['files']['data'][0]['id']
     picture_href = get_image_href(moltin_token, file_id)
@@ -211,7 +214,6 @@ def handle_contacts(bot, update):
     return 'START'
 
 
-
 def handle_users_reply(bot, update):
     if update.message:
         user_reply = update.message.text
@@ -224,8 +226,7 @@ def handle_users_reply(bot, update):
     if user_reply == '/start':
         user_state = 'START'
     else:
-        user_state = TelegramUser.objects.get(chat_id=chat_id)
-
+        user_state = TelegramUser.objects.get(chat_id=chat_id).next_state
     states_functions = {
         "START": start,
         'HANDLE_DESCRIPTION': handle_description,
@@ -240,6 +241,7 @@ def handle_users_reply(bot, update):
         if TelegramUser.objects.filter(chat_id=chat_id):
             user = TelegramUser.objects.get(chat_id=chat_id)
             user.next_state = next_state
+            user.save()
         else:
             TelegramUser.objects.create(
                 chat_id=chat_id,
@@ -247,7 +249,6 @@ def handle_users_reply(bot, update):
             )
     except Exception as err:
         print(err)
-
 
 
 def get_location(bot, update):
@@ -266,32 +267,34 @@ def get_location(bot, update):
         text=coordinates
     )
     all_moltin_pizzerias = get_all_entries(moltin_token, flow_name)
-    all_pizzerias = dict()
-    return
+    for pizzeria in all_moltin_pizzerias:
+        pizzeria_lon = pizzeria['Longitude']
+        pizzeria_lat = pizzeria['Latitude']
+        print(pizzeria_lon,pizzeria_lat)
+        print(coordinates)
+        all_pizzerias = dict()
+        return
 
+    def fetch_coordinates(yandex_api_key, address):
+        base_url = "https://geocode-maps.yandex.ru/1.x"
+        response = requests.get(base_url, params={
+            "geocode": address,
+            "apikey": yandex_api_key,
+            "format": "json",
+        })
+        response.raise_for_status()
+        found_places = response.json()['response']['GeoObjectCollection']['featureMember']
 
-def fetch_coordinates(yandex_api_key, address):
-    base_url = "https://geocode-maps.yandex.ru/1.x"
-    response = requests.get(base_url, params={
-        "geocode": address,
-        "apikey": yandex_api_key,
-        "format": "json",
-    })
-    response.raise_for_status()
-    found_places = response.json()['response']['GeoObjectCollection']['featureMember']
+        if not found_places:
+            return None
 
-    if not found_places:
-        return None
+        most_relevant = found_places[0]
+        lon, lat = most_relevant['GeoObject']['Point']['pos'].split(" ")
+        return lat, lon
 
-    most_relevant = found_places[0]
-    lon, lat = most_relevant['GeoObject']['Point']['pos'].split(" ")
-    return lat, lon
-
-if __name__ == '__main__':
-    env = Env()
-    env.read_env()
-    moltin_client_secret = env('MOLTIN_CLIENT_SECRET')
-    moltin_client_id = env('MOLTIN_CLIENT_ID')
-    yandex_api_key = env('YANDEX_API_KEY')
-
-
+    if __name__ == '__main__':
+        env = Env()
+        env.read_env()
+        moltin_client_secret = env('MOLTIN_CLIENT_SECRET')
+        moltin_client_id = env('MOLTIN_CLIENT_ID')
+        yandex_api_key = env('YANDEX_API_KEY')
