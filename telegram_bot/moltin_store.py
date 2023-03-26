@@ -111,7 +111,6 @@ def add_product_cart(moltin_token, client_id, product_id, product_quantity):
         }
     }
     response = requests.post(url, headers=headers, json=json_data)
-    print(response.json())
     response.raise_for_status()
 
 
@@ -267,13 +266,12 @@ def create_file(moltin_token, file_url):
 
 
 def get_all_flow(moltin_token):
-    url = 'https://api.moltin.com/v2/flows/d8c36871-11d3-4e87-b1e8-224df3346383'
+    url = 'https://api.moltin.com/v2/flows/'
     headers = {
         'Authorization': f'Bearer {moltin_token}'
     }
     response = requests.get(url, headers=headers)
     response.raise_for_status()
-    print(response.json())
 
 
 def create_flow(moltin_token, flow_status=True):
@@ -292,27 +290,21 @@ def create_flow(moltin_token, flow_status=True):
     }
     response = requests.post(url, headers=headers, json=json_data)
     response.raise_for_status()
-    print(response.json())
     return response.json()
 
 
 def create_entry(
         moltin_token,
-        flow_name
+        flow_name,
+        fill_fields=dict
 ):
     url = f'https://api.moltin.com/v2/flows/{flow_name}/entries'
     headers = {
         'Authorization': f'Bearer {moltin_token}'
     }
     json_data = {
-        'data': {
-            'type': 'entry',
-            'user_id': '',
-            'Address': '',
-            'Longitude': '',
-            'Latitude': ''
+        'data': fill_fields
         }
-    }
     response = requests.post(url, headers=headers, json=json_data)
     response.raise_for_status()
     return response.json()
@@ -326,3 +318,45 @@ def get_all_entries(moltin_token, flow_name):
     response = requests.get(url, headers=headers)
     response.raise_for_status()
     return response.json().get('data')
+
+
+def get_enteries(moltin_token, slug):
+    url = f'https://api.moltin.com/v2/flows/{slug}/entries'
+    headers = {
+        'Authorization': f'Bearer {moltin_token}'
+    }
+    response = requests.get(url, headers=headers)
+    response.raise_for_status()
+    return response.json().get('data')
+
+def create_field(moltin_token):
+    url = f'https://api.moltin.com/v2/fields'
+    headers = {
+        'Authorization': f'Bearer {moltin_token}'
+    }
+    data = {
+      "data": {
+        "type": "field",
+        "name": "Deliveryman",
+        "slug": "Deliveryman",
+        "field_type": "string",
+        "validation_rules": [],
+        "description": "Deliveryman",
+        "required": True,
+        "default": 0,
+        "enabled": True,
+        "order": 1,
+        "omit_null": False,
+        "relationships": {
+            "flow": {
+                "data": {
+                    "type": "flow",
+                    "id": "d8c36871-11d3-4e87-b1e8-224df3346383"
+                }
+            }
+        }
+      }
+    }
+    response = requests.post(url, headers=headers, json=data)
+    response.raise_for_status()
+    return response.json()

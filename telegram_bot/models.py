@@ -11,6 +11,7 @@ class MoltinToken(models.Model):
 class TelegramUser(models.Model):
     chat_id = models.CharField(max_length=200)
     next_state = models.CharField(max_length=200)
+    address_pizzeria = models.CharField(max_length=200, null=True, blank=True)
 
     def __str__(self):
         return self.chat_id

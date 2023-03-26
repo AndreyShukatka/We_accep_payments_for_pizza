@@ -19,14 +19,18 @@ if __name__ == '__main__':
         pizzeria_alias = adresse.get('alias')
         pizzeria_longitude = adresse.get('coordinates').get('lon')
         pizzeria_latitude =adresse.get('coordinates').get('lat')
+        fill_fields = {
+            'type': 'entry',
+            'Adress': pizzeria_address,
+            'Alias': pizzeria_alias,
+            'Longitude': pizzeria_longitude,
+            'Latitude': pizzeria_latitude
+        }
         try:
             create_entry(
                 moltin_token,
-                pizzeria_address,
-                pizzeria_alias,
-                pizzeria_longitude,
-                pizzeria_latitude,
-                flow_name
+                flow_name,
+                fill_fields
             )
             sleep(2)
         except requests.exceptions.ConnectTimeout:

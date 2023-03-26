@@ -1,7 +1,8 @@
 from django.core.management.base import BaseCommand
 from environs import Env
 from telegram_bot.moltin_store import get_moltin_token, create_product_store, del_product_store, \
-    get_all_products, create_inventory_store, create_file_relationship, create_file, create_entry, create_flow
+    get_all_products, create_inventory_store, create_file_relationship, create_file, create_entry, create_flow, \
+    create_field, get_all_flow, get_enteries
 
 
 class Command(BaseCommand):
@@ -93,6 +94,22 @@ class Command(BaseCommand):
             help='Создать модель',
             action="store_true"
         )
+        parser.add_argument(
+            '--create_field',
+            help='Создать поле',
+            action="store_true"
+        )
+        parser.add_argument(
+            '--get_all_flow',
+            help='Создать поле',
+            action="store_true"
+        )
+        parser.add_argument(
+            '--get_enteries',
+            help='Поиск поля',
+            action='store_true'
+        )
+
 
     def handle(self, *args, **options):
         env = Env()
@@ -143,3 +160,9 @@ class Command(BaseCommand):
         elif options['create_flow']:
             print(options['create_flow'])
             create_flow(moltin_token, flow_status=True)
+        elif options['create_field']:
+            create_field(moltin_token)
+        elif options['get_all_flow']:
+            get_all_flow(moltin_token)
+        elif options['get_enteries']:
+            get_enteries(moltin_token)
