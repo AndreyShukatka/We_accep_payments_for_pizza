@@ -1,4 +1,5 @@
 from geopy import distance
+import textwrap
 from .models import TelegramUser
 from environs import Env
 from .moltin_store import (
@@ -113,11 +114,12 @@ def handle_description(update, context):
         )
         reply_markup = InlineKeyboardMarkup(keyboard)
         cart_description = [
-            f'''
-{product['name']}
-{product['description']}
-{product['quantity']} пицц в корзине на сумму {product['value']['amount']} рублей\n
-'''
+            textwrap.dedent(f'''
+            
+            {product['name']}
+            {product['description']}
+            {product['quantity']} пицц в корзине на сумму {product['value']['amount']} рублей\n
+        ''')
             for product in products_cart]
         cart_description.append(f'Total: {total_price}')
         update.effective_message.reply_text(
@@ -362,13 +364,13 @@ def handle_delivery(update, context):
     products_cart = get_cart_items(moltin_token, client_id)
     total_price = get_cart(moltin_token, client_id)
     cart_description = [
-        f'''
-{product['name']}
-{product['description']}
-{product['quantity']} пицц в корзине на сумму {product['value']['amount']} рублей\n
-        '''
+        textwrap.dedent(f'''
+        {product['name']}
+        {product['description']}
+        {product['quantity']} пицц в корзине на сумму {product['value']['amount']} рублей\n
+        ''')
         for product in products_cart]
-    cart_description.append(f'К оплате {total_price} рублей')
+    cart_description.append(textwrap.dedent(f'К оплате {total_price} рублей'))
     context.bot.send_message(
         chat_id=deliveriman,
         text=''.join(cart_description),
@@ -378,6 +380,8 @@ def handle_delivery(update, context):
         latitude=deliveri_address.get('Longitude'),
         longitude=deliveri_address.get('Latitude')
     )
+    remind_via = 3600
+    context.job_queue.run_once(send_delivery_notification, remind_via, context=client_id)
 
 
 def handle_pickup(update, context):
@@ -411,3 +415,12 @@ def get_min_distance(moltin_token, flow_name, user_coordinates):
 
     min_distance = min(distance_all_pizzerias, key=get_address_distance)
     return min_distance
+
+
+def send_delivery_notification(context):
+    message = textwrap.dedent(f'''
+    Приятного аппетита! *место для рекламы*\n
+    *сообщение что делать если пицца не пришла*
+    ''')
+    job = context.job
+    context.bot.send_message(job.context, text=message)
