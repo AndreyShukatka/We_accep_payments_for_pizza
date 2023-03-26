@@ -1,4 +1,5 @@
 from geopy import distance
+from telegram import (LabeledPrice, ShippingOption)
 import textwrap
 from .models import TelegramUser
 from environs import Env
@@ -115,11 +116,10 @@ def handle_description(update, context):
         reply_markup = InlineKeyboardMarkup(keyboard)
         cart_description = [
             textwrap.dedent(f'''
-            
             {product['name']}
             {product['description']}
             {product['quantity']} пицц в корзине на сумму {product['value']['amount']} рублей\n
-        ''')
+            ''')
             for product in products_cart]
         cart_description.append(f'Total: {total_price}')
         update.effective_message.reply_text(
@@ -242,7 +242,7 @@ def handle_users_reply(update, context):
         'HANDLE_MENU': handle_menu,
         'HANDLE_CART': handle_cart,
         'WAITING_LOCATION': handle_location,
-        'HANDLE_WAITING': 'handle_waiting',
+        'HANDLE_PAYMENT': handle_payment,
         'HANDLE_DELIVERY': handle_delivery,
         'HANDLE_PICKUP': handle_pickup
     }
@@ -291,6 +291,7 @@ def handle_location(update, context):
     message = update.message
     if update.callback_query:
         if update.callback_query.data == 'delivery':
+            handle_payment(update, context)
             handle_delivery(update, context)
             return 'HANDLE_DELIVERY'
         else:
@@ -344,7 +345,7 @@ def handle_location(update, context):
     flow_name = 'customer_Address'
     create_entry(moltin_token, flow_name, fill_fields, )
     update.effective_message.delete()
-
+    return 'HANDLE_DELIVERY'
 
 def handle_delivery(update, context):
     moltin_token = checking_period_token(moltin_client_id, moltin_client_secret)
@@ -382,7 +383,7 @@ def handle_delivery(update, context):
     )
     remind_via = 3600
     context.job_queue.run_once(send_delivery_notification, remind_via, context=client_id)
-
+    return 'HANDLE_PAYMENT'
 
 def handle_pickup(update, context):
     min_distance = TelegramUser.objects.get(chat_id=update.callback_query.message.chat_id).address_pizzeria
@@ -424,3 +425,45 @@ def send_delivery_notification(context):
     ''')
     job = context.job
     context.bot.send_message(job.context, text=message)
+
+
+def handle_payment(update, context):
+    moltin_token = checking_period_token(moltin_client_id, moltin_client_secret)
+    client_id = update.callback_query.message.chat_id
+    products_cart = get_cart_items(moltin_token, client_id)
+    total_price = get_cart(moltin_token, client_id)
+    title = "Оплата заказа"
+    cart_description = [
+        'Test payment'
+        ]
+    # select a payload just for you to recognize its the donation from your bot
+    payload = env('PAYLOAD')
+    # In order to get a provider_token see https://core.telegram.org/bots/payments#getting-a-token
+    provider_token = env('BANK_TOKEN')
+    start_parameter = "test-payment"
+    currency = "RUB"
+    # price in dollars
+    # price * 100 so as to include 2 d.p.
+    prices = [LabeledPrice(label=product['name'], amount=product['value']['amount']*10)
+              for product in products_cart]
+
+    # optionally pass need_name=True, need_phone_number=True,
+    # need_email=True, need_shipping_address=True, is_flexible=True
+    context.bot.sendInvoice(client_id, title, cart_description, payload,
+                    provider_token, start_parameter, currency, prices)
+
+
+def precheckout_callback(update, context):
+    query = update.pre_checkout_query
+    if query.invoice_payload != env('PAYLOAD'):
+        query.answer(ok=False, error_message="Что-то пошло не так...")
+    else:
+        query.answer(ok=True)
+
+
+def successful_payment_callback(update, context):
+    keyboard = [[InlineKeyboardButton(f'Продолжить', callback_data='card_confirm')]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    update.message.reply_text("Спасибо за Вашу оплату!", reply_markup=reply_markup)
+    context.bot.delete_message(chat_id=update.message.chat_id, message_id=update.message.message_id)
+
