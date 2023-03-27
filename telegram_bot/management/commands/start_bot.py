@@ -1,7 +1,6 @@
 from django.core.management.base import BaseCommand
 from telegram_bot.tgm_bot import handle_location, handle_users_reply, precheckout_callback, successful_payment_callback
 from environs import Env
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram_bot.models import MoltinToken
 from telegram.ext import (
     Filters,

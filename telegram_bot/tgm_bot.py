@@ -6,7 +6,6 @@ from environs import Env
 from .moltin_store import (
     get_all_products,
     get_product,
-    get_product_stock,
     get_image_href,
     add_product_cart,
     get_cart,
@@ -15,18 +14,11 @@ from .moltin_store import (
     get_all_entries,
     checking_period_token,
     create_entry,
-    get_enteries
 )
 import requests
 
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Chat
-from telegram.ext import (
-    Filters,
-    Updater,
-    CallbackQueryHandler,
-    CommandHandler,
-    MessageHandler
-)
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+
 
 env = Env()
 env.read_env()
@@ -290,7 +282,6 @@ def handle_location(update, context):
     reply_markup = InlineKeyboardMarkup(keyboard)
     message = update.message
     if update.callback_query:
-        print(update.callback_query.data)
         if update.callback_query.data == 'delivery':
             handle_delivery(update, context)
             return 'HANDLE_DELIVERY'
