@@ -290,10 +290,13 @@ def handle_location(update, context):
     reply_markup = InlineKeyboardMarkup(keyboard)
     message = update.message
     if update.callback_query:
+        print(update.callback_query.data)
         if update.callback_query.data == 'delivery':
-            handle_payment(update, context)
             handle_delivery(update, context)
             return 'HANDLE_DELIVERY'
+        elif update.callback_query.data == 'menu':
+            start(update, context)
+            return 'HANDLE_MENU'
         else:
             handle_pickup(update, context)
             return 'HANDLE_MENU'
@@ -345,7 +348,8 @@ def handle_location(update, context):
     flow_name = 'customer_Address'
     create_entry(moltin_token, flow_name, fill_fields, )
     update.effective_message.delete()
-    return 'HANDLE_DELIVERY'
+    return 'WAITING_LOCATION'
+
 
 def handle_delivery(update, context):
     moltin_token = checking_period_token(moltin_client_id, moltin_client_secret)
@@ -383,7 +387,9 @@ def handle_delivery(update, context):
     )
     remind_via = 3600
     context.job_queue.run_once(send_delivery_notification, remind_via, context=client_id)
-    return 'HANDLE_PAYMENT'
+    handle_payment(update, context)
+    return 'HANDLE_DELIVERY'
+
 
 def handle_pickup(update, context):
     min_distance = TelegramUser.objects.get(chat_id=update.callback_query.message.chat_id).address_pizzeria
@@ -431,26 +437,27 @@ def handle_payment(update, context):
     moltin_token = checking_period_token(moltin_client_id, moltin_client_secret)
     client_id = update.callback_query.message.chat_id
     products_cart = get_cart_items(moltin_token, client_id)
-    total_price = get_cart(moltin_token, client_id)
     title = "Оплата заказа"
     cart_description = [
         'Test payment'
-        ]
-    # select a payload just for you to recognize its the donation from your bot
+    ]
     payload = env('PAYLOAD')
-    # In order to get a provider_token see https://core.telegram.org/bots/payments#getting-a-token
     provider_token = env('BANK_TOKEN')
     start_parameter = "test-payment"
     currency = "RUB"
-    # price in dollars
-    # price * 100 so as to include 2 d.p.
-    prices = [LabeledPrice(label=product['name'], amount=product['value']['amount']*10)
+    prices = [LabeledPrice(label=product['name'], amount=product['value']['amount'] * 100)
               for product in products_cart]
-
-    # optionally pass need_name=True, need_phone_number=True,
-    # need_email=True, need_shipping_address=True, is_flexible=True
-    context.bot.sendInvoice(client_id, title, cart_description, payload,
-                    provider_token, start_parameter, currency, prices)
+    context.bot.sendInvoice(
+        client_id,
+        title,
+        cart_description,
+        payload,
+        provider_token,
+        start_parameter,
+        currency,
+        prices
+    )
+    return 'HANDLE_PAYMENT'
 
 
 def precheckout_callback(update, context):
@@ -460,10 +467,6 @@ def precheckout_callback(update, context):
     else:
         query.answer(ok=True)
 
-
 def successful_payment_callback(update, context):
-    keyboard = [[InlineKeyboardButton(f'Продолжить', callback_data='card_confirm')]]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    update.message.reply_text("Спасибо за Вашу оплату!", reply_markup=reply_markup)
-    context.bot.delete_message(chat_id=update.message.chat_id, message_id=update.message.message_id)
+    context.bot.send_message(chat_id=update.message.chat_id, text='Спасибо за Вашу оплату!')
 
