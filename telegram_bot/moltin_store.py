@@ -24,15 +24,16 @@ def get_moltin_token(moltin_client_id, moltin_client_secret):
     MoltinToken(
         access_token=token_params.get('access_token'),
         token_creation_time=now_time.strftime(date_formatter),
-        token_end_time=token_end_time.strftime(date_formatter)
+        token_end_time=token_end_time.strftime(date_formatter),
+        active_token=True
     ).save()
     return token_params.get('access_token')
 
 
 def checking_period_token(moltin_client_id, moltin_client_secret):
     date_formatter = '%Y-%m-%d %H:%M:%S'
-    moltin_token = MoltinToken.objects.first()
-    if MoltinToken.objects.all():
+    if MoltinToken.objects.filter(active_token=True):
+        moltin_token = MoltinToken.objects.get(active_token=True)
         now_time = datetime.now()
         token_creation_time = datetime.strptime(str(moltin_token.token_creation_time), date_formatter)
         token_end_time = datetime.strptime(str(moltin_token.token_end_time), date_formatter)
@@ -40,6 +41,8 @@ def checking_period_token(moltin_client_id, moltin_client_secret):
             moltin_token = moltin_token.access_token
             return moltin_token
         else:
+            moltin_token.active_token = False
+            moltin_token.save()
             moltin_token = get_moltin_token(moltin_client_id, moltin_client_secret)
             return moltin_token
     else:
@@ -305,7 +308,7 @@ def create_entry(
     }
     json_data = {
         'data': fill_fields
-        }
+    }
     response = requests.post(url, headers=headers, json=json_data)
     response.raise_for_status()
     return response.json()
@@ -330,33 +333,34 @@ def get_enteries(moltin_token, slug):
     response.raise_for_status()
     return response.json().get('data')
 
+
 def create_field(moltin_token):
     url = f'https://api.moltin.com/v2/fields'
     headers = {
         'Authorization': f'Bearer {moltin_token}'
     }
     data = {
-      "data": {
-        "type": "field",
-        "name": "Deliveryman",
-        "slug": "Deliveryman",
-        "field_type": "string",
-        "validation_rules": [],
-        "description": "Deliveryman",
-        "required": True,
-        "default": 0,
-        "enabled": True,
-        "order": 1,
-        "omit_null": False,
-        "relationships": {
-            "flow": {
-                "data": {
-                    "type": "flow",
-                    "id": "d8c36871-11d3-4e87-b1e8-224df3346383"
+        "data": {
+            "type": "field",
+            "name": "Deliveryman",
+            "slug": "Deliveryman",
+            "field_type": "string",
+            "validation_rules": [],
+            "description": "Deliveryman",
+            "required": True,
+            "default": 0,
+            "enabled": True,
+            "order": 1,
+            "omit_null": False,
+            "relationships": {
+                "flow": {
+                    "data": {
+                        "type": "flow",
+                        "id": "d8c36871-11d3-4e87-b1e8-224df3346383"
+                    }
                 }
             }
         }
-      }
     }
     response = requests.post(url, headers=headers, json=data)
     response.raise_for_status()
