@@ -274,7 +274,7 @@ def handle_location(update, context):
     else:
         address = message.text
         user_coordinates = fetch_coordinates(yandex_api_key, address)
-    min_distance = get_min_distance(moltin_token, flow_name, user_coordinates)
+    min_distance = get_nearest_pizzeria(moltin_token, flow_name, user_coordinates)
     user = TelegramUser.objects.get(chat_id=message.chat_id)
     user.address_pizzeria = min_distance['address']
     user.save()
@@ -330,7 +330,7 @@ def handle_delivery(update, context):
         if entry['telegramm_user_id'] == str(client_id)
     ][0]
     user_coordinates = [deliveri_address.get('Longitude'), deliveri_address.get('Latitude')]
-    pizzeria = get_min_distance(moltin_token, flow_name_pizzeria, user_coordinates)
+    pizzeria = get_nearest_pizzeria(moltin_token, flow_name_pizzeria, user_coordinates)
     deliveriman = [
         entry for entry in get_all_entries(moltin_token, flow_name=flow_name_pizzeria)
         if entry['Address'] == pizzeria.get('address')
@@ -373,7 +373,7 @@ def handle_pickup(update, context):
     return 'HANDLE_PICKUP'
 
 
-def get_min_distance(moltin_token, flow_name, user_coordinates):
+def get_nearest_pizzeria(moltin_token, flow_name, user_coordinates):
     all_moltin_pizzerias = get_all_entries(moltin_token, flow_name)
     distance_all_pizzerias = []
     for pizzeria in all_moltin_pizzerias:
@@ -386,10 +386,10 @@ def get_min_distance(moltin_token, flow_name, user_coordinates):
             'distance': user_distance.km
         })
 
-    def get_address_distance(address):
+    def get_distance_pizzeria(address):
         return address['distance']
 
-    min_distance = min(distance_all_pizzerias, key=get_address_distance)
+    min_distance = min(distance_all_pizzerias, key=get_distance_pizzeria)
     return min_distance
 
 
