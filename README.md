@@ -40,7 +40,9 @@ python3 manage.py createsuperuser
 
 Объявите переменные окружения по умолчанию в файле `.env`:
 
-- `DJANGO_SECRET_KEY` - Ваш секретный ключ джанго
+- `DJANGO_SECRET_KEY` - Ваш секретный ключ джанго.
+- `DJANGO_DEBUG` - Режим дебага, по умолчанию `False`.
+- `ALLOWED_HOSTS` - Список хостов/доменов, для которых может работать текущий сайт.
 - `MOLTIN_CLIENT_ID` - идентификатор клиента Elasticpath.
 - `MOLTIN_CLIENT_SECRET` - секретный токен клиента Elasticpath.
 - `TGM_TOKEN` - токен вашего телеграм-бота.
