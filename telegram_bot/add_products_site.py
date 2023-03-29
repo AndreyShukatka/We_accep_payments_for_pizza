@@ -5,7 +5,10 @@ from moltin_store import (
     create_file,
     create_file_relationship
 )
-from We_accep_payments_for_pizza_django.settings import moltin_client_id, moltin_client_secret
+from We_accep_payments_for_pizza_django.settings import (
+    moltin_client_id,
+    moltin_client_secret
+)
 
 
 if __name__ == '__main__':
