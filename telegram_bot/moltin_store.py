@@ -1,6 +1,4 @@
 import requests
-from environs import Env
-import argparse
 from datetime import datetime, timedelta
 from .models import MoltinToken
 
@@ -35,15 +33,24 @@ def checking_period_token(moltin_client_id, moltin_client_secret):
     if MoltinToken.objects.filter(active_token=True):
         moltin_token = MoltinToken.objects.get(active_token=True)
         now_time = datetime.now()
-        token_creation_time = datetime.strptime(str(moltin_token.token_creation_time), date_formatter)
-        token_end_time = datetime.strptime(str(moltin_token.token_end_time), date_formatter)
+        token_creation_time = datetime.strptime(
+            str(moltin_token.token_creation_time),
+            date_formatter
+        )
+        token_end_time = datetime.strptime(
+            str(moltin_token.token_end_time),
+            date_formatter
+        )
         if token_creation_time <= now_time <= token_end_time:
             moltin_token = moltin_token.access_token
             return moltin_token
         else:
             moltin_token.active_token = False
             moltin_token.save()
-            moltin_token = get_moltin_token(moltin_client_id, moltin_client_secret)
+            moltin_token = get_moltin_token(
+                moltin_client_id,
+                moltin_client_secret
+            )
             return moltin_token
     else:
         moltin_token = get_moltin_token(moltin_client_id, moltin_client_secret)
@@ -335,7 +342,7 @@ def get_enteries(moltin_token, slug):
 
 
 def create_field(moltin_token):
-    url = f'https://api.moltin.com/v2/fields'
+    url = 'https://api.moltin.com/v2/fields'
     headers = {
         'Authorization': f'Bearer {moltin_token}'
     }
