@@ -14,18 +14,19 @@ def get_moltin_token(moltin_client_id, moltin_client_secret):
     }
     response = requests.post(url, data=data)
     response.raise_for_status()
+    token_params = response.json()
     date_formatter = '%Y-%m-%d %H:%M:%S'
     now_time = datetime.now()
-    token_expiration = int(response.json().get('expires_in'))
+    token_expiration = int(token_params.get('expires_in'))
     seconds = int(60)
     minutes_token_expiration = token_expiration / seconds
     token_end_time = now_time + timedelta(minutes=minutes_token_expiration)
     MoltinToken(
-        access_token=response.json().get('access_token'),
+        access_token=token_params.get('access_token'),
         token_creation_time=now_time.strftime(date_formatter),
         token_end_time=token_end_time.strftime(date_formatter)
     ).save()
-    return response.json().get('access_token')
+    return token_params.get('access_token')
 
 
 def checking_period_token(moltin_client_id, moltin_client_secret):
