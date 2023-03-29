@@ -1,8 +1,21 @@
 from django.core.management.base import BaseCommand
-from We_accep_payments_for_pizza_django.settings import moltin_client_id, moltin_client_secret
-from telegram_bot.moltin_store import get_moltin_token, create_product_store, del_product_store, \
-    get_all_products, create_inventory_store, create_file_relationship, create_file, create_entry, create_flow, \
-    create_field, get_all_flow, get_enteries
+from We_accep_payments_for_pizza_django.settings import (
+    moltin_client_id,
+    moltin_client_secret
+)
+from telegram_bot.moltin_store import (
+    get_moltin_token,
+    create_product_store,
+    del_product_store,
+    get_all_products,
+    create_inventory_store,
+    create_file_relationship,
+    create_file, create_entry,
+    create_flow,
+    create_field,
+    get_all_flow,
+    get_enteries
+)
 
 
 class Command(BaseCommand):
@@ -109,7 +122,6 @@ class Command(BaseCommand):
             help='Поиск поля',
             action='store_true'
         )
-
 
     def handle(self, *args, **options):
         moltin_token = get_moltin_token(
