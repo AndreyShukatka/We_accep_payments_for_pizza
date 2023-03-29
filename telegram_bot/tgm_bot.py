@@ -1,7 +1,8 @@
 from geopy import distance
 from .utils import fetch_coordinates
 import textwrap
-from We_accep_payments_for_pizza_django.settings import moltin_client_id, moltin_client_secret, yandex_api_key
+from We_accep_payments_for_pizza_django.settings import moltin_client_id, moltin_client_secret, yandex_api_key, payload, \
+    provider_token
 from .models import TelegramUser
 from .moltin_store import (
     get_all_products,
@@ -15,7 +16,6 @@ from .moltin_store import (
     checking_period_token,
     create_entry,
 )
-
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, LabeledPrice
 
@@ -326,14 +326,14 @@ def handle_delivery(update, context):
     flow_name_address = 'customer_Address'
     flow_name_pizzeria = 'Pizzeria'
     deliveri_address = [
-        x for x in get_all_entries(moltin_token, flow_name=flow_name_address)
-        if x['telegramm_user_id'] == str(client_id)
+        entry for entry in get_all_entries(moltin_token, flow_name=flow_name_address)
+        if entry['telegramm_user_id'] == str(client_id)
     ][0]
     user_coordinates = [deliveri_address.get('Longitude'), deliveri_address.get('Latitude')]
     pizzeria = get_min_distance(moltin_token, flow_name_pizzeria, user_coordinates)
     deliveriman = [
-        x for x in get_all_entries(moltin_token, flow_name=flow_name_pizzeria)
-        if x['Address'] == pizzeria.get('address')
+        entry for entry in get_all_entries(moltin_token, flow_name=flow_name_pizzeria)
+        if entry['Address'] == pizzeria.get('address')
     ][0].get('Deliveryman')
     products_cart = get_cart_items(moltin_token, client_id)
     total_price = get_cart(moltin_token, client_id)
@@ -410,8 +410,6 @@ def handle_payment(update, context):
     cart_description = [
         'Test payment'
     ]
-    payload = env('PAYLOAD')
-    provider_token = env('BANK_TOKEN')
     start_parameter = "test-payment"
     currency = "RUB"
     prices = [LabeledPrice(label=product['name'], amount=product['value']['amount'] * 100)
@@ -431,7 +429,7 @@ def handle_payment(update, context):
 
 def precheckout_callback(update, context):
     query = update.pre_checkout_query
-    if query.invoice_payload != env('PAYLOAD'):
+    if query.invoice_payload != payload:
         query.answer(ok=False, error_message="Что-то пошло не так...")
     else:
         query.answer(ok=True)
