@@ -306,7 +306,6 @@ def handle_location(update, context):
         )
     user_address = message.text
     user_lon, user_lat = user_coordinates
-    print(user_lat, user_lon)
     fill_fields = {
         'type': 'entry',
         'telegramm_user_id': message.chat_id,

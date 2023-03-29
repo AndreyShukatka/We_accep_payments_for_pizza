@@ -53,29 +53,29 @@ python3 manage.py createsuperuser
 ### Запуск
 - Для запуска пропишите
 ```shell
-python2 pizza_bot.py
+python manage.py pizza_bot
 ```
 
 # Работа с магазином
 ### Вывести все товары в магазине в консоль
 ```shell
-python moltin_store.py --get_all_products 
+python manage.py moltin_store --get_all_products 
 ```
 
 
 ### Добавить продукт в магазин
 ```shell
-python moltin_store.py --create_product --product_name <Название продукта> --sku <SKU предмета> --description <Описание продукта> --amount <Цена продукта>
+python manage.py  moltin_store --create_product --product_name <Название продукта> --sku <SKU предмета> --description <Описание продукта> --amount <Цена продукта>
 ```
 
 ### Пополнить запасы на складе
 ```shell
-python moltin_store.py --create_inventory_store --product_id <ID продукта> --quantity <Количество>
+python manage.py  moltin_store --create_inventory_store --product_id <ID продукта> --quantity <Количество>
 ```
 
 ### Удалить продукт из магазина
 ```shell
-python moltin_store.py --del_product --product_id <ID продукта>
+python manage.py  moltin_store --del_product --product_id <ID продукта>
 ```
 
 ### Привязать фотографию к товару
@@ -84,5 +84,5 @@ python moltin_store.py --del_product --product_id <ID продукта>
 ![img.png](img.png)
 
 ```shell
-python moltin_store.py --create_file_relationship --image_id <ID фотографии с сайта> --product_id <ID продукта>
+python manage.py  moltin_store --create_file_relationship --image_id <ID фотографии с сайта> --product_id <ID продукта>
 ```
