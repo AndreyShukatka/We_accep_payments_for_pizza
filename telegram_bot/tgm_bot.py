@@ -1,4 +1,5 @@
 from geopy import distance
+from .utils import fetch_coordinates
 import textwrap
 from We_accep_payments_for_pizza_django.settings import moltin_client_id, moltin_client_secret, yandex_api_key
 from .models import TelegramUser
@@ -14,7 +15,7 @@ from .moltin_store import (
     checking_period_token,
     create_entry,
 )
-import requests
+
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, LabeledPrice
 
@@ -181,11 +182,14 @@ def handle_cart(update, context):
         )
         reply_markup = InlineKeyboardMarkup(keyboard)
         cart_description = [
-            f'''
-{number + 1}) Name: {product['name']}
-Description: {product['description']}
-Price: ${product['unit_price']['amount']} pet kg
-{product['quantity']} kg in cart for ${product['value']['amount']}\n\n'''
+            textwrap.dedent(
+                f'''
+                {number + 1}) Name: {product['name']}
+                Description: {product['description']}
+                Price: ${product['unit_price']['amount']} pet kg
+                {product['quantity']} kg in cart for ${product['value']['amount']}\n
+                '''
+            )
             for number, product in enumerate(products_cart)]
         cart_description.append(f'Total: {total_price}')
         update.effective_message.reply_text(
@@ -246,24 +250,6 @@ def handle_users_reply(update, context):
         print(err)
 
 
-def fetch_coordinates(yandex_api_key, address):
-    base_url = "https://geocode-maps.yandex.ru/1.x"
-    response = requests.get(base_url, params={
-        "geocode": address,
-        "apikey": yandex_api_key,
-        "format": "json",
-    })
-    response.raise_for_status()
-    found_places = response.json()['response']['GeoObjectCollection']['featureMember']
-
-    if not found_places:
-        return None
-
-    most_relevant = found_places[0]
-    lon, lat = most_relevant['GeoObject']['Point']['pos'].split(" ")
-    return lat, lon
-
-
 def handle_location(update, context):
     moltin_token = checking_period_token(moltin_client_id, moltin_client_secret)
     flow_name = 'Pizzeria'
@@ -319,8 +305,8 @@ def handle_location(update, context):
             reply_markup=reply_markup
         )
     user_address = message.text
-    user_lon = user_coordinates[0]
-    user_lat = user_coordinates[1]
+    user_lon, user_lat = user_coordinates
+    print(user_lat, user_lon)
     fill_fields = {
         'type': 'entry',
         'telegramm_user_id': message.chat_id,
