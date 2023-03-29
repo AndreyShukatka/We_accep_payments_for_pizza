@@ -18,8 +18,8 @@ def get_moltin_token(moltin_client_id, moltin_client_secret):
     date_formatter = '%Y-%m-%d %H:%M:%S'
     now_time = datetime.now()
     token_expiration = int(token_params.get('expires_in'))
-    seconds = int(60)
-    minutes_token_expiration = token_expiration / seconds
+    seconds_in_minute = int(60)
+    minutes_token_expiration = token_expiration / seconds_in_minute
     token_end_time = now_time + timedelta(minutes=minutes_token_expiration)
     MoltinToken(
         access_token=token_params.get('access_token'),
