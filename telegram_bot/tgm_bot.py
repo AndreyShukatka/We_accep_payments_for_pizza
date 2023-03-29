@@ -1,8 +1,13 @@
 from geopy import distance
 from .utils import fetch_coordinates
 import textwrap
-from We_accep_payments_for_pizza_django.settings import moltin_client_id, moltin_client_secret, yandex_api_key, payload, \
+from We_accep_payments_for_pizza_django.settings import (
+    moltin_client_id,
+    moltin_client_secret,
+    yandex_api_key,
+    payload,
     provider_token
+)
 from .models import TelegramUser
 from .moltin_store import (
     get_all_products,
@@ -22,7 +27,10 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup, LabeledPrice
 
 def start(update, context):
     keyboard = []
-    moltin_token = checking_period_token(moltin_client_id, moltin_client_secret)
+    moltin_token = checking_period_token(
+        moltin_client_id,
+        moltin_client_secret
+    )
     all_products = get_all_products(moltin_token)
     for product in all_products:
         keyboard.append([InlineKeyboardButton(
@@ -40,7 +48,10 @@ def start(update, context):
 
 
 def handle_menu(update, context):
-    moltin_token = checking_period_token(moltin_client_id, moltin_client_secret)
+    moltin_token = checking_period_token(
+        moltin_client_id,
+        moltin_client_secret
+    )
     query = update.callback_query
     callback = query.data
     if callback == 'cart':
@@ -52,7 +63,13 @@ def handle_menu(update, context):
     product_details = get_product(moltin_token, callback)
     file_id = product_details['relationships']['files']['data'][0]['id']
     picture_href = get_image_href(moltin_token, file_id)
-    product_description = f'{product_details.get("name")} \nСтоимость: {product_details.get("price")[0].get("amount")} рублей \n\n{product_details.get("description")} '
+    product_description = textwrap.dedent(
+        f'''
+        {product_details.get("name")}
+        Стоимость: {product_details.get("price")[0].get("amount")} рублей\n\n
+        {product_details.get("description")} 
+         '''
+    )
     keyboard = [
         [
             InlineKeyboardButton('Положить в корзину', callback_data=f'{callback},1'),
@@ -73,7 +90,10 @@ def handle_menu(update, context):
 
 
 def handle_description(update, context):
-    moltin_token = checking_period_token(moltin_client_id, moltin_client_secret)
+    moltin_token = checking_period_token(
+        moltin_client_id,
+        moltin_client_secret
+    )
     query = update.callback_query
     callback = query.data
     client_id = query['message']['chat']['id']
@@ -121,7 +141,10 @@ def handle_description(update, context):
 
 
 def handle_cart(update, context):
-    moltin_token = checking_period_token(moltin_client_id, moltin_client_secret)
+    moltin_token = checking_period_token(
+        moltin_client_id,
+        moltin_client_secret
+    )
     query = update.callback_query
     callback = query.data
     client_id = query['message']['chat']['id']
@@ -200,17 +223,6 @@ def handle_cart(update, context):
         return "HANDLE_CART"
 
 
-def handle_contacts(update, context):
-    moltin_token = checking_period_token(moltin_client_id, moltin_client_secret)
-    email = update.message.text
-    client_id = update.message.chat_id
-    update.effective_message.reply_text(
-        text="Ваш заказ создан."
-    )
-    start(update, context)
-    return 'START'
-
-
 def handle_users_reply(update, context):
     if update.message:
         user_reply = update.message.text
@@ -251,7 +263,10 @@ def handle_users_reply(update, context):
 
 
 def handle_location(update, context):
-    moltin_token = checking_period_token(moltin_client_id, moltin_client_secret)
+    moltin_token = checking_period_token(
+        moltin_client_id,
+        moltin_client_secret
+    )
     flow_name = 'Pizzeria'
     keyboard = [
         [InlineKeyboardButton("Самовывоз", callback_data='pickup')],
@@ -270,29 +285,49 @@ def handle_location(update, context):
             handle_pickup(update, context)
             return 'HANDLE_MENU'
     if message.location:
-        user_coordinates = (message.location.latitude, message.location.longitude)
+        user_coordinates = (
+            message.location.latitude,
+            message.location.longitude
+        )
     else:
         address = message.text
         user_coordinates = fetch_coordinates(yandex_api_key, address)
-    min_distance = get_nearest_pizzeria(moltin_token, flow_name, user_coordinates)
+    min_distance = get_nearest_pizzeria(
+        moltin_token,
+        flow_name,
+        user_coordinates
+    )
     user = TelegramUser.objects.get(chat_id=message.chat_id)
     user.address_pizzeria = min_distance['address']
     user.save()
     if min_distance['distance'] < 0.5:
         update.effective_message.reply_text(
-            text=f'Может, заберете пиццу из нашей пиццерии неподалёку? Она всего в {int(min_distance["distance"] * 100)} метрах от вас! '
-                 f'Вот её адрес: {min_distance["address"]}. '
-                 f'А можем и бесплатно доставить.',
+            text=textwrap.dedent(
+                f'''
+                Может, заберете пиццу из нашей пиццерии неподалёку? Она всего в {int(min_distance["distance"] * 100)} метрах от вас! '
+                Вот её адрес: {min_distance["address"]}.
+                А можем и бесплатно доставить.
+                '''),
             reply_markup=reply_markup
         )
     elif 0.5 < min_distance['distance'] < 5:
         update.effective_message.reply_text(
-            text=f'Похоже, придется ехать до вас на самокате. Доставка будет стоить 100 рублей. Доставляем или самовывоз?',
+            text=textwrap.dedent(
+                '''
+                Похоже, придется ехать до вас на автомобиле.
+                Доставка будет стоить 100 рублей. Доставляем или самовывоз?
+                '''
+            ),
             reply_markup=reply_markup
         )
     elif 5 < min_distance['distance'] < 20:
         update.effective_message.reply_text(
-            text=f'Похоже, придется ехать до вас на автомобиле. Доставка будет стоить 300 рублей. Доставляем или самовывоз?',
+            text=textwrap.dedent(
+                '''
+                Похоже, придется ехать до вас на автомобиле.
+                Доставка будет стоить 300 рублей. Доставляем или самовывоз?
+                '''
+            ),
             reply_markup=reply_markup
         )
     else:
@@ -301,7 +336,12 @@ def handle_location(update, context):
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         update.effective_message.reply_text(
-            text=f'Простите, но так далеко мы пиццу не доставим. Ближайшая пиццерия аж в {int(min_distance["distance"])} километрах от вас!',
+            text=textwrap.dedent(
+                f'''
+                Простите, но так далеко мы пиццу не доставим. '
+                Ближайшая пиццерия аж в {int(min_distance["distance"])} километрах от вас!
+                '''
+            ),
             reply_markup=reply_markup
         )
     user_address = message.text
@@ -320,18 +360,33 @@ def handle_location(update, context):
 
 
 def handle_delivery(update, context):
-    moltin_token = checking_period_token(moltin_client_id, moltin_client_secret)
+    moltin_token = checking_period_token(
+        moltin_client_id,
+        moltin_client_secret
+    )
     client_id = update.callback_query.message.chat_id
     flow_name_address = 'customer_Address'
     flow_name_pizzeria = 'Pizzeria'
     deliveri_address = [
-        entry for entry in get_all_entries(moltin_token, flow_name=flow_name_address)
+        entry for entry in get_all_entries(
+            moltin_token,
+            flow_name=flow_name_address
+        )
         if entry['telegramm_user_id'] == str(client_id)
     ][0]
-    user_coordinates = [deliveri_address.get('Longitude'), deliveri_address.get('Latitude')]
-    pizzeria = get_nearest_pizzeria(moltin_token, flow_name_pizzeria, user_coordinates)
+    user_coordinates = [
+        deliveri_address.get('Longitude'), deliveri_address.get('Latitude')
+    ]
+    pizzeria = get_nearest_pizzeria(
+        moltin_token,
+        flow_name_pizzeria,
+        user_coordinates
+    )
     deliveriman = [
-        entry for entry in get_all_entries(moltin_token, flow_name=flow_name_pizzeria)
+        entry for entry in get_all_entries(
+            moltin_token,
+            flow_name=flow_name_pizzeria
+        )
         if entry['Address'] == pizzeria.get('address')
     ][0].get('Deliveryman')
     products_cart = get_cart_items(moltin_token, client_id)
@@ -354,7 +409,11 @@ def handle_delivery(update, context):
         longitude=deliveri_address.get('Latitude')
     )
     remind_via = 3600
-    context.job_queue.run_once(send_delivery_notification, remind_via, context=client_id)
+    context.job_queue.run_once(
+        send_delivery_notification,
+        remind_via,
+        context=client_id
+    )
     handle_payment(update, context)
     return 'HANDLE_DELIVERY'
 
@@ -393,16 +452,21 @@ def get_nearest_pizzeria(moltin_token, flow_name, user_coordinates):
 
 
 def send_delivery_notification(context):
-    message = textwrap.dedent(f'''
-    Приятного аппетита! *место для рекламы*\n
-    *сообщение что делать если пицца не пришла*
-    ''')
+    message = textwrap.dedent(
+        '''
+        Приятного аппетита! *место для рекламы*\n
+        *сообщение что делать если пицца не пришла*
+        '''
+    )
     job = context.job
     context.bot.send_message(job.context, text=message)
 
 
 def handle_payment(update, context):
-    moltin_token = checking_period_token(moltin_client_id, moltin_client_secret)
+    moltin_token = checking_period_token(
+        moltin_client_id,
+        moltin_client_secret
+    )
     client_id = update.callback_query.message.chat_id
     products_cart = get_cart_items(moltin_token, client_id)
     title = "Оплата заказа"
@@ -411,8 +475,13 @@ def handle_payment(update, context):
     ]
     start_parameter = "test-payment"
     currency = "RUB"
-    prices = [LabeledPrice(label=product['name'], amount=product['value']['amount'] * 100)
-              for product in products_cart]
+    prices = [
+        LabeledPrice(
+            label=product['name'],
+            amount=product['value']['amount'] * 100
+        )
+        for product in products_cart
+    ]
     context.bot.sendInvoice(
         client_id,
         title,
@@ -435,4 +504,7 @@ def precheckout_callback(update, context):
 
 
 def successful_payment_callback(update, context):
-    context.bot.send_message(chat_id=update.message.chat_id, text='Спасибо за Вашу оплату!')
+    context.bot.send_message(
+        chat_id=update.message.chat_id,
+        text='Спасибо за Вашу оплату!'
+    )
