@@ -1,14 +1,10 @@
 import json
+from We_accep_payments_for_pizza_django.settings import moltin_client_id, moltin_client_secret
 from time import sleep
-from environs import Env
 from moltin_store import create_entry, get_moltin_token
 import requests
 
 if __name__ == '__main__':
-    env = Env()
-    env.read_env()
-    moltin_client_id = env('MOLTIN_CLIENT_ID')
-    moltin_client_secret = env('MOLTIN_CLIENT_SECRET')
     moltin_token = get_moltin_token(moltin_client_id, moltin_client_secret)
     flow_name = 'Pizzeria'
     with open('addresses.json', 'r', encoding='utf-8') as adresses_file:

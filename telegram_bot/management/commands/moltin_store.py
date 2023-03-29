@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand
-from environs import Env
+from We_accep_payments_for_pizza_django.settings import moltin_client_id, moltin_client_secret
 from telegram_bot.moltin_store import get_moltin_token, create_product_store, del_product_store, \
     get_all_products, create_inventory_store, create_file_relationship, create_file, create_entry, create_flow, \
     create_field, get_all_flow, get_enteries
@@ -112,10 +112,6 @@ class Command(BaseCommand):
 
 
     def handle(self, *args, **options):
-        env = Env()
-        env.read_env()
-        moltin_client_id = env('MOLTIN_CLIENT_ID')
-        moltin_client_secret = env('MOLTIN_CLIENT_SECRET')
         moltin_token = get_moltin_token(
             moltin_client_id,
             moltin_client_secret
@@ -158,7 +154,6 @@ class Command(BaseCommand):
                 flow_name='customer_Address'
             )
         elif options['create_flow']:
-            print(options['create_flow'])
             create_flow(moltin_token, flow_status=True)
         elif options['create_field']:
             create_field(moltin_token)

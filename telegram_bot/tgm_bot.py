@@ -1,8 +1,7 @@
 from geopy import distance
-from telegram import (LabeledPrice, ShippingOption)
 import textwrap
+from We_accep_payments_for_pizza_django.settings import moltin_client_id, moltin_client_secret, yandex_api_key
 from .models import TelegramUser
-from environs import Env
 from .moltin_store import (
     get_all_products,
     get_product,
@@ -17,14 +16,7 @@ from .moltin_store import (
 )
 import requests
 
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-
-
-env = Env()
-env.read_env()
-moltin_client_secret = env('MOLTIN_CLIENT_SECRET')
-moltin_client_id = env('MOLTIN_CLIENT_ID')
-yandex_api_key = env('YANDEX_API_KEY')
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, LabeledPrice
 
 
 def start(update, context):
@@ -458,6 +450,6 @@ def precheckout_callback(update, context):
     else:
         query.answer(ok=True)
 
+
 def successful_payment_callback(update, context):
     context.bot.send_message(chat_id=update.message.chat_id, text='Спасибо за Вашу оплату!')
-

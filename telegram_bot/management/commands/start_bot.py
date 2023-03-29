@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 from telegram_bot.tgm_bot import handle_location, handle_users_reply, precheckout_callback, successful_payment_callback
-from environs import Env
+from We_accep_payments_for_pizza_django.settings import tgm_token
 from telegram_bot.models import MoltinToken
 from telegram.ext import (
     Filters,
@@ -16,9 +16,6 @@ class Command(BaseCommand):
     help = 'Start telegramm bot'
 
     def handle(self, *args, **options):
-        env = Env()
-        env.read_env()
-        tgm_token = env('TGM_TOKEN')
         updater = Updater(tgm_token, use_context=True)
         location_handler = MessageHandler(Filters.location, handle_location)
         dispatcher = updater.dispatcher
