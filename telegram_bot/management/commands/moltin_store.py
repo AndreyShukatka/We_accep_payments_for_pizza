@@ -1,8 +1,5 @@
 from django.core.management.base import BaseCommand
-from We_accep_payments_for_pizza_django.settings import (
-    moltin_client_id,
-    moltin_client_secret
-)
+from django.conf import settings
 from telegram_bot.moltin_store import (
     get_moltin_token,
     create_product_store,
@@ -125,8 +122,8 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         moltin_token = get_moltin_token(
-            moltin_client_id,
-            moltin_client_secret
+            settings.moltin_client_id,
+            settings.moltin_client_secret
         )
         if options['create_product']:
             product_name = options['product_name']

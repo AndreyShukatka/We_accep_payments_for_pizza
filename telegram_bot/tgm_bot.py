@@ -1,13 +1,7 @@
 from geopy import distance
 from .utils import fetch_coordinates
 import textwrap
-from We_accep_payments_for_pizza_django.settings import (
-    moltin_client_id,
-    moltin_client_secret,
-    yandex_api_key,
-    payload,
-    provider_token
-)
+from django.conf import settings
 from .models import TelegramUser
 from .moltin_store import (
     get_all_products,
@@ -28,8 +22,8 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup, LabeledPrice
 def start(update, context):
     keyboard = []
     moltin_token = checking_period_token(
-        moltin_client_id,
-        moltin_client_secret
+        settings.moltin_client_id,
+        settings.moltin_client_secret
     )
     all_products = get_all_products(moltin_token)
     for product in all_products:
@@ -49,8 +43,8 @@ def start(update, context):
 
 def handle_menu(update, context):
     moltin_token = checking_period_token(
-        moltin_client_id,
-        moltin_client_secret
+        settings.moltin_client_id,
+        settings.moltin_client_secret
     )
     query = update.callback_query
     callback = query.data
@@ -91,8 +85,8 @@ def handle_menu(update, context):
 
 def handle_description(update, context):
     moltin_token = checking_period_token(
-        moltin_client_id,
-        moltin_client_secret
+        settings.moltin_client_id,
+        settings.moltin_client_secret
     )
     query = update.callback_query
     callback = query.data
@@ -142,8 +136,8 @@ def handle_description(update, context):
 
 def handle_cart(update, context):
     moltin_token = checking_period_token(
-        moltin_client_id,
-        moltin_client_secret
+        settings.moltin_client_id,
+        settings.moltin_client_secret
     )
     query = update.callback_query
     callback = query.data
@@ -264,8 +258,8 @@ def handle_users_reply(update, context):
 
 def handle_location(update, context):
     moltin_token = checking_period_token(
-        moltin_client_id,
-        moltin_client_secret
+        settings.moltin_client_id,
+        settings.moltin_client_secret
     )
     flow_name = 'Pizzeria'
     keyboard = [
@@ -291,7 +285,7 @@ def handle_location(update, context):
         )
     else:
         address = message.text
-        user_coordinates = fetch_coordinates(yandex_api_key, address)
+        user_coordinates = fetch_coordinates(settings.yandex_api_key, address)
     min_distance = get_nearest_pizzeria(
         moltin_token,
         flow_name,
@@ -361,8 +355,8 @@ def handle_location(update, context):
 
 def handle_delivery(update, context):
     moltin_token = checking_period_token(
-        moltin_client_id,
-        moltin_client_secret
+        settings.moltin_client_id,
+        settings.moltin_client_secret
     )
     client_id = update.callback_query.message.chat_id
     flow_name_address = 'customer_Address'
@@ -464,8 +458,8 @@ def send_delivery_notification(context):
 
 def handle_payment(update, context):
     moltin_token = checking_period_token(
-        moltin_client_id,
-        moltin_client_secret
+        settings.moltin_client_id,
+        settings.moltin_client_secret
     )
     client_id = update.callback_query.message.chat_id
     products_cart = get_cart_items(moltin_token, client_id)
@@ -486,8 +480,8 @@ def handle_payment(update, context):
         client_id,
         title,
         cart_description,
-        payload,
-        provider_token,
+        settings.payload,
+        settings.provider_token,
         start_parameter,
         currency,
         prices
@@ -497,7 +491,7 @@ def handle_payment(update, context):
 
 def precheckout_callback(update, context):
     query = update.pre_checkout_query
-    if query.invoice_payload != payload:
+    if query.invoice_payload != settings.payload:
         query.answer(ok=False, error_message="Что-то пошло не так...")
     else:
         query.answer(ok=True)

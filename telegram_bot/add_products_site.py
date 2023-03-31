@@ -5,17 +5,14 @@ from moltin_store import (
     create_file,
     create_file_relationship
 )
-from We_accep_payments_for_pizza_django.settings import (
-    moltin_client_id,
-    moltin_client_secret
-)
+from django.conf import settings
 
 
 if __name__ == '__main__':
     with open('menu.json', 'r', encoding='utf-8') as menu_file:
         menu = menu_file.read()
     menu_json = json.loads(menu)
-    moltin_token = get_moltin_token(moltin_client_id, moltin_client_secret)
+    moltin_token = get_moltin_token(settings.moltin_client_id, settings.moltin_client_secret)
     for product in menu_json:
         product_name = product.get('name')
         product_sku = str(product.get('id'))

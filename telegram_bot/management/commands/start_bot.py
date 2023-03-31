@@ -5,7 +5,7 @@ from telegram_bot.tgm_bot import (
     precheckout_callback,
     successful_payment_callback
 )
-from We_accep_payments_for_pizza_django.settings import tgm_token
+from django.conf import settings
 from telegram_bot.models import MoltinToken
 from telegram.ext import (
     Filters,
@@ -21,7 +21,7 @@ class Command(BaseCommand):
     help = 'Start telegramm bot'
 
     def handle(self, *args, **options):
-        updater = Updater(tgm_token, use_context=True)
+        updater = Updater(settings.tgm_token, use_context=True)
         location_handler = MessageHandler(Filters.location, handle_location)
         dispatcher = updater.dispatcher
         dispatcher.chat_data['access_token'] = MoltinToken.objects.all().first()
