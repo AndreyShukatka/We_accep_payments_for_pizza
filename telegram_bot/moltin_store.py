@@ -31,9 +31,11 @@ def get_moltin_token():
 
 def checking_period_token():
     date_formatter = '%Y-%m-%d %H:%M:%S'
-    active_token = MoltinToken.objects.filter(active_token=True)
-    if active_token:
-        moltin_token = active_token.get(active_token=True)
+    try:
+        moltin_token = MoltinToken.objects.get(active_token=True)
+    except MoltinToken.DoesNotExist:
+        moltin_token = None
+    if moltin_token:
         now_time = datetime.now()
         token_creation_time = datetime.strptime(
             str(moltin_token.token_creation_time),
