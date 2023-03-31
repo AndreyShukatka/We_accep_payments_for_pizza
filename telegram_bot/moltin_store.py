@@ -1,13 +1,14 @@
 import requests
+from django.conf import settings
 from datetime import datetime, timedelta
 from .models import MoltinToken
 
 
-def get_moltin_token(moltin_client_id, moltin_client_secret):
+def get_moltin_token():
     url = 'https://api.moltin.com/oauth/access_token'
     data = {
-        'client_id': moltin_client_id,
-        'client_secret': moltin_client_secret,
+        'client_id': settings.MOLTIN_CLIENT_ID,
+        'client_secret': settings.MOLTIN_CLIENT_SECRET,
         'grant_type': 'client_credentials'
     }
     response = requests.post(url, data=data)
@@ -28,10 +29,11 @@ def get_moltin_token(moltin_client_id, moltin_client_secret):
     return token_params.get('access_token')
 
 
-def checking_period_token(moltin_client_id, moltin_client_secret):
+def checking_period_token():
     date_formatter = '%Y-%m-%d %H:%M:%S'
-    if MoltinToken.objects.filter(active_token=True):
-        moltin_token = MoltinToken.objects.get(active_token=True)
+    active_token = MoltinToken.objects.filter(active_token=True)
+    if active_token:
+        moltin_token = active_token.get(active_token=True)
         now_time = datetime.now()
         token_creation_time = datetime.strptime(
             str(moltin_token.token_creation_time),
@@ -47,13 +49,10 @@ def checking_period_token(moltin_client_id, moltin_client_secret):
         else:
             moltin_token.active_token = False
             moltin_token.save()
-            moltin_token = get_moltin_token(
-                moltin_client_id,
-                moltin_client_secret
-            )
+            moltin_token = get_moltin_token()
             return moltin_token
     else:
-        moltin_token = get_moltin_token(moltin_client_id, moltin_client_secret)
+        moltin_token = get_moltin_token()
         return moltin_token
 
 

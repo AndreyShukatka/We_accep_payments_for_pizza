@@ -121,10 +121,7 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        moltin_token = get_moltin_token(
-            settings.moltin_client_id,
-            settings.moltin_client_secret
-        )
+        moltin_token = get_moltin_token()
         if options['create_product']:
             product_name = options['product_name']
             sku = options['sku']

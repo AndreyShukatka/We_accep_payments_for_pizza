@@ -5,7 +5,7 @@ from moltin_store import create_entry, get_moltin_token
 import requests
 
 if __name__ == '__main__':
-    moltin_token = get_moltin_token(settings.moltin_client_id, settings.moltin_client_secret)
+    moltin_token = get_moltin_token()
     flow_name = 'Pizzeria'
     with open('addresses.json', 'r', encoding='utf-8') as adresses_file:
         adresses = adresses_file.read()

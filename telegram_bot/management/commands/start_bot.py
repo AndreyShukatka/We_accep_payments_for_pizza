@@ -16,12 +16,11 @@ from telegram.ext import (
     PreCheckoutQueryHandler
 )
 
-
 class Command(BaseCommand):
     help = 'Start telegramm bot'
 
     def handle(self, *args, **options):
-        updater = Updater(settings.tgm_token, use_context=True)
+        updater = Updater(settings.TGM_TOKEN, use_context=True)
         location_handler = MessageHandler(Filters.location, handle_location)
         dispatcher = updater.dispatcher
         dispatcher.chat_data['access_token'] = MoltinToken.objects.all().first()

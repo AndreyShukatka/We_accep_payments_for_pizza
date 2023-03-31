@@ -125,9 +125,9 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-moltin_client_secret = env('MOLTIN_CLIENT_SECRET')
-moltin_client_id = env('MOLTIN_CLIENT_ID')
-yandex_api_key = env('YANDEX_API_KEY')
-tgm_token = env('TGM_TOKEN')
-payload = env('PAYLOAD')
-provider_token = env('BANK_TOKEN')
+MOLTIN_CLIENT_SECRET = env('MOLTIN_CLIENT_SECRET')
+MOLTIN_CLIENT_ID = env('MOLTIN_CLIENT_ID')
+YANDEX_API_KEY = env('YANDEX_API_KEY')
+TGM_TOKEN = env('TGM_TOKEN')
+PAYLOAD = env('PAYLOAD')
+PROVIDER_TOKEN = env('BANK_TOKEN')
