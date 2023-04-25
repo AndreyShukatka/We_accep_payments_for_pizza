@@ -39,7 +39,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'telegram_bot'
+    'telegram_bot',
+    'facebook_bot'
 ]
 
 MIDDLEWARE = [
@@ -131,3 +132,4 @@ YANDEX_API_KEY = env('YANDEX_API_KEY')
 TGM_TOKEN = env('TGM_TOKEN')
 PAYLOAD = env('PAYLOAD')
 PROVIDER_TOKEN = env('BANK_TOKEN')
+FACEBOOK_TOKEN = env('FACEBOOK_TOKEN')
