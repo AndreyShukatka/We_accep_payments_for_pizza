@@ -1,15 +1,15 @@
-import os
-
 import requests
 from flask import Flask, request
 from django.core.management.base import BaseCommand
 from django.conf import settings
+from facebook_bot.facebook_bot import send_message, send_menu
 
 
 class Command(BaseCommand):
     help = 'Вебхуки для Facebook'
 
     app = Flask(__name__)
+
     @app.route('/', methods=['GET'])
     def verify():
         """
@@ -33,28 +33,8 @@ class Command(BaseCommand):
                     if messaging_event.get("message"):
                         sender_id = messaging_event["sender"]["id"]
                         recipient_id = messaging_event["recipient"]["id"]
-                        message_text = messaging_event["message"]["text"]
-                        send_message(sender_id, message_text)
+                        send_menu(sender_id)
         return "ok", 200
-
 
     def handle(self, *args, **options):
         self.app.run(debug=True)
-
-
-def send_message(recipient_id, message_text):
-    params = {"access_token": settings.FACEBOOK_TOKEN}
-    headers = {"Content-Type": "application/json"}
-    request_content = {
-        "recipient": {
-            "id": recipient_id
-        },
-        "message": {
-            "text": message_text
-        }
-    }
-    response = requests.post(
-        "https://graph.facebook.com/v2.6/me/messages",
-        params=params, headers=headers, json=request_content
-    )
-    response.raise_for_status()
