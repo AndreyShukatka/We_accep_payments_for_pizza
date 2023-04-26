@@ -51,7 +51,28 @@ def send_menu(recipient_id):
 def menu_creation():
     moltin_token = checking_period_token()
     all_products = get_all_products(moltin_token)
-    menu = []
+    menu = [{
+        'title': 'Меню',
+        'image_url': 'https://image.similarpng.com/very-thumbnail/2020/05/Pizza-logo-vector-PNG.png',
+        'subtitle': 'Здесь вы можете выбрать один изз вариантов меню',
+        'buttons': [
+            {
+                'type': 'postback',
+                'title': 'Корзина',
+                'payload': 'DEVELOPER_DEFINED_PAYLOAD',
+            },
+            {
+                'type': 'postback',
+                'title': 'Акции',
+                'payload': 'DEVELOPER_DEFINED_PAYLOAD',
+            },
+            {
+                'type': 'postback',
+                'title': 'Сделать заказ',
+                'payload': 'DEVELOPER_DEFINED_PAYLOAD',
+            },
+        ]
+    }]
     for number, product in enumerate(all_products):
         if number < 5:
             image_url = get_image_href(
