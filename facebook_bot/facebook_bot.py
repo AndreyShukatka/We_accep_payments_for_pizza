@@ -1,6 +1,6 @@
 from django.conf import settings
 import requests
-from telegram_bot.moltin_store import checking_period_token, get_all_products
+from telegram_bot.moltin_store import checking_period_token, get_all_products, get_image_href
 
 
 def send_message(recipient_id, message_text):
@@ -24,7 +24,6 @@ def send_message(recipient_id, message_text):
 def send_menu(recipient_id):
     params = {"access_token": settings.FACEBOOK_TOKEN}
     headers = {"Content-Type": "application/json"}
-    print(menu_creation())
     request_content = {
         'recipient': {
             'id': recipient_id,
@@ -55,8 +54,13 @@ def menu_creation():
     menu = []
     for number, product in enumerate(all_products):
         if number < 5:
+            image_url = get_image_href(
+                moltin_token,
+                product.get('relationships').get('files').get('data')[0].get('id')
+            )
             menu.append({
                 'title': f'{product.get("name")} ({product.get("price")[0].get("amount")} руб.)',
+                'image_url': image_url,
                 'subtitle': product.get('description'),
                 'buttons': [
                     {
@@ -68,4 +72,3 @@ def menu_creation():
             })
         else:
             return menu
-
